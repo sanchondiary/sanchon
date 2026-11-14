@@ -85,7 +85,7 @@
   try { if (firebase.database) rtdb = firebase.database(); } catch (e) {}
 
   window.SCFB = {
-    ver: 'v12',
+    ver: 'v17',
     auth, fs, ready,
     isGoogle: () => !!(auth.currentUser && !auth.currentUser.isAnonymous),
     who() {

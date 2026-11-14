@@ -786,7 +786,7 @@ const VHOME=[
   {n:'목수 가족',j:'이',sh:'목수네',tr:55,need:{glulam:3,clt:1},cost:90000,ds:'아이 둘과 함께 와서 마을 목공방을 열고 싶대요. 목공 교실 강사도 맡아요.',x:436,y:1046,c:'#c89a62',r:'#7a3a2a'},
   {n:'은퇴한 산림공무원 부부',j:'가',sh:'산림공무원네',tr:80,need:{clt:2,glulam:2},cost:120000,ds:'평생 숲을 돌보다 은퇴하고 산촌에서 살고 싶대요.',x:110,y:1005,c:'#e0c49a',r:'#3a4a6a'}
 ];
-const VBOARD=[652,990],VCLSP=[690,1078];
+const VBOARD=[652,990],VCLSP=[700,884];
 function vil(){if(!S.vil||typeof S.vil!=='object')S.vil={tr:0,reqs:[],rd:0,homes:0,cls:null,fs:null};const v=S.vil;v.tr=clamp(Number(v.tr)||0,0,100);v.homes=clamp(Math.floor(Number(v.homes)||0),0,VHOME.length);if(!Array.isArray(v.reqs))v.reqs=[];
   if(v.rd!==S.day){v.rd=S.day;const s=sea(),pool=VREQ.map((q,i)=>i).filter(i=>(!VREQ[i].sea||VREQ[i].sea.includes(s))&&(VREQ[i].hm||0)<=v.homes).sort(()=>Math.random()-.5);v.reqs=pool.slice(0,2+(v.homes?1:0)).map(i=>({i,done:false}))}
   return v}
@@ -1319,6 +1319,9 @@ document.addEventListener('click',e=>{
   if(d.sellsap){if(S.visiting)return;const sp=d.sellsap;if(!(S.sapl[sp]>0))return;S.sapl[sp]--;earn(LSP[sp].price);renderKeep();toast(`조경업체에 ${LSP[sp].n} 묘목을 팔았어요. +${won(LSP[sp].price)}원`);return}
   if(d.plantl){if(S.visiting||!(S.sapl[d.plantl]>0))return;placing=d.plantl;homeSel=null;tab='forest';render();toast('마을에서 심을 곳을 눌러요.');return}
   if(d.plcancel!==undefined){placing=null;const pb=$('#plbar');pb&&pb.remove();return}
+  if(d.vdig){if(S.visiting)return;const k=OBJ?OBJ.findIndex(o=>o.vil&&o.key===d.vdig):-1;if(k<0)return;if(S.sta<5){toast('체력이 모자라요.');return}const o=OBJ[k],sp=vtSp(o);
+    S.sta-=5;S.rmTree=[...new Set([...(S.rmTree||[]),o.key])].slice(-400);S.sapl[sp]=(S.sapl[sp]||0)+1;OBJ.splice(k,1);const b=OBS.findIndex(q=>q.x===o.x&&q.y===o.y);if(b>=0)OBS.splice(b,1);
+    save();publishVillage();renderTop();actKey='';toast(`마을 나무를 캐서 ${LSP[sp].n} 묘목으로 챙겼어요. 우리 집에서 원하는 곳에 다시 심을 수 있어요.`);return}
   if(d.dig!==undefined){if(S.visiting)return;const k=+d.dig,dd=S.deco[k];if(!dd)return;S.deco.splice(k,1);S.sapl[dd.sp]=(S.sapl[dd.sp]||0)+1;save();publishVillage();actKey='';toast(`${LSP[dd.sp].n}을(를) 캐서 묘목으로 챙겼어요. 우리 집에서 다시 심을 수 있어요.`);return}
   if(d.crs){crKeep();CR.shirt=d.crs;createChar();return}
   if(d.crh){crKeep();CR.hat=d.crh;createChar();return}
@@ -1646,7 +1649,7 @@ function pickEco(loc){const cost=ECOSEL.reduce((t,k)=>t+ECO[k].cost,0);
   <div class="spgrid">${ECOLIST.map(k=>`<button class="spc ${ECOSEL.includes(k)?'on':''}" data-ecos="${loc}:${k}"><span>${treeIcon(k)}</span><b>${ECO[k].n}</b><small>${won(ECO[k].cost)}원</small></button>`).join('')}</div>
   <p class="tknow">${ECOSEL.length?ECOSEL.map(k=>ECO[k].n).join(' · '):'아직 고른 나무가 없어요'}</p>
   <button class="btn" data-ecoplant="${loc}" ${ECOSEL.length>=3&&S.money>=cost?'':'disabled'}>${ECOSEL.length<3?`${3-ECOSEL.length}종 더 골라요`:`${ECOSEL.length}종 섞어 심기 · ${won(cost)}원`}</button><button class="btn ghost" data-fn="${loc}:back">기능 다시 고르기</button>`)}
-function pickHeal(loc){const opts=[...Object.keys(HEALSP),...Object.keys(LSP)];const cost=HEALSEL.reduce((t,k)=>t+(LSP[k]?LSP[k].price:(SPC[k]||ECO[k]).cost),0);
+function pickHeal(loc){const opts=[...Object.keys(HEALSP),...Object.keys(LSP).filter(k=>!LSP[k].wild)];const cost=HEALSEL.reduce((t,k)=>t+(LSP[k]?LSP[k].price:(SPC[k]||ECO[k]).cost),0);
   modal(`<h2>조경수종 고르기</h2><p>벚나무·단풍나무·이팝나무 같은 조경수와 피톤치드가 많은 나무를 섞어, 계절마다 볼거리가 있는 생활 숲을 만들어요. 여러 종을 섞을수록 좋아요. (최대 5종)</p>
   <div class="spgrid">${opts.map(k=>{const c=LSP[k]?LSP[k].price:(SPC[k]||ECO[k]).cost;return `<button class="spc ${HEALSEL.includes(k)?'on':''}" data-heals="${loc}:${k}"><span>${treeIcon(k)}</span><b>${spName(k)}</b><small>${LSP[k]?'조경수':'치유 '+HEALSP[k]} · ${won(c)}원</small></button>`}).join('')}</div>
   <button class="btn" data-healplant="${loc}" ${HEALSEL.length&&S.money>=cost?'':'disabled'}>${HEALSEL.length?`${HEALSEL.length}종 심기 · ${won(cost)}원`:'수종을 골라요'}</button><button class="btn ghost" data-fn="${loc}:back">기능 다시 고르기</button>`)}
@@ -1756,7 +1759,8 @@ const LSP={
   ipap:{n:'이팝나무',cost:4000,grow:4,price:12000,ds:'늦봄 하얀 쌀밥 같은 꽃이 펴요.'},
   baerong:{n:'배롱나무',cost:5000,grow:5,price:15000,ds:'여름 내내 분홍 꽃이 피고 져요.'},
   sansuyu:{n:'산수유',cost:3000,grow:3,price:8000,ds:'이른 봄 노란 꽃, 가을엔 빨간 열매.'},
-  bansong:{n:'반송',cost:8000,grow:6,price:25000,ds:'우산처럼 둥근 소나무, 사계절 푸르러요.'}
+  bansong:{n:'반송',cost:8000,grow:6,price:25000,ds:'우산처럼 둥근 소나무, 사계절 푸르러요.'},
+  sonamu:{n:'소나무',cost:4000,grow:4,price:12000,ds:'마을에 원래 있던 소나무예요. 사계절 푸르러요.',wild:1}
 };
 let homeSel=null,placing=null;
 function comfort(){return (S.room||[]).reduce((t,r)=>t+((FURN[r.id]||{}).c||0)*(r.id==='stove'&&sea()===3?2:1),0)}
@@ -1796,7 +1800,7 @@ function homeView(){
   ${sap.length?sap.map(([k,v])=>`<div class="card rec"><div class="pic">${ltIcon(k)}</div><div style="min-width:0"><div class="nm">${LSP[k].n} <small style="font-family:var(--body);font-size:12px;color:var(--ink2)">${v}그루</small></div><div class="price">${LSP[k].ds}</div></div><div class="side"><button class="btn" data-plantl="${k}">마을에 심기</button><button class="btn ghost" data-sellsap="${k}">팔기 ${won(LSP[k].price)}원</button></div></div>`).join(''):`<div class="card"><p class="empty">키운 묘목이 없어요. 묘포장에서 씨앗을 뿌려 보세요.</p></div>`}
   <p class="sub">마을에 심은 조경수는 ${S.deco.length}그루예요. 조경수가 늘수록 탐방객이 늘고 이웃도 볼 수 있어요. 심은 나무 옆에 서면 캐서 옮길 수 있어요.</p>
   </div>`}
-function sowModal(i){modal(`<h2>씨앗 고르기</h2><p>이랑 ${i+1}에 뿌릴 조경수를 골라요.</p>${Object.entries(LSP).map(([k,v])=>`<div class="card rec" style="background:var(--paper2)"><div class="pic" style="background:#fff">${ltIcon(k)}</div><div style="min-width:0"><div class="nm">${v.n}</div><div class="price">${v.ds}<br>${v.grow}일 · 묘목값 ${won(v.price)}원</div></div><div class="side"><button class="btn" data-sowsp="${i}:${k}" ${S.money>=v.cost?'':'disabled'}>${won(v.cost)}원</button></div></div>`).join('')}<button class="btn ghost" data-close>닫기</button>`)}
+function sowModal(i){modal(`<h2>씨앗 고르기</h2><p>이랑 ${i+1}에 뿌릴 조경수를 골라요.</p>${Object.entries(LSP).filter(([k,v])=>!v.wild).map(([k,v])=>`<div class="card rec" style="background:var(--paper2)"><div class="pic" style="background:#fff">${ltIcon(k)}</div><div style="min-width:0"><div class="nm">${v.n}</div><div class="price">${v.ds}<br>${v.grow}일 · 묘목값 ${won(v.price)}원</div></div><div class="side"><button class="btn" data-sowsp="${i}:${k}" ${S.money>=v.cost?'':'disabled'}>${won(v.cost)}원</button></div></div>`).join('')}<button class="btn ghost" data-close>닫기</button>`)}
 function tryPlace(x,y){const sp=placing;if(!sp||!(S.sapl[sp]>0))return;
   let bad='';if(x<30||x>WW-30||y<90||y>WH-20)bad='마을 바깥이에요.';
   else if(Math.abs(y-streamY(x))<36)bad='물가에는 심을 수 없어요.';
@@ -1808,6 +1812,9 @@ function tryPlace(x,y){const sp=placing;if(!sp||!(S.sapl[sp]>0))return;
   S.deco.push({sp,x:Math.round(x),y:Math.round(y)});S.sapl[sp]--;DPOP[S.deco.length-1]=clock;save();publishVillage();
   toast(`${LSP[sp].n}을(를) 심었어요.`);if(!(S.sapl[sp]>0)){placing=null;const pb=$('#plbar');pb&&pb.remove()}else{const t=$('#plTxt');t&&(t.textContent=`${LSP[sp].n} 남은 묘목 ${S.sapl[sp]}그루`)}}
 const DPOP={};
+function nearVTree(){if(S.visiting||placing||!OBJ)return -1;let b=-1,bd=40;OBJ.forEach((o,i)=>{if(o.t!=='tree'||!o.vil)return;const k=Math.hypot(P.x-o.x,(P.y-o.y)*1.2);if(k<bd){bd=k;b=i}});return b}
+const VT_SP={'#c8452a':'maple','#9a3a2a':'maple','#b8602a':'maple','#d9862a':'sansuyu','#e0b23a':'ginkgo','#e2c23a':'ginkgo','#6f8f3c':'ipap'};
+const vtSp=o=>o.k==='pine'?'sonamu':VT_SP[o.col]||'cherry';
 function nearDeco(){if(S.visiting||placing)return -1;let b=-1,bd=34;S.deco.forEach((d,i)=>{const k=Math.hypot(P.x-d.x,P.y-d.y);if(k<bd){bd=k;b=i}});return b}
 function cleanRoom(a){const out=[],seen={};(Array.isArray(a)?a:[]).slice(0,30).forEach(x=>{if(!x||!FURN[x.id])return;const r=Math.floor(Number(x.r)),c=Math.floor(Number(x.c));if(!(r>=0&&r<5&&c>=0&&c<6)||!cellOk(x.id,r)||seen[r+','+c])return;seen[r+','+c]=1;out.push({id:x.id,r,c})});return out}
 function cleanDeco(a){return (Array.isArray(a)?a:[]).slice(0,60).filter(d=>d&&LSP[d.sp]).map(d=>({sp:d.sp,x:clamp(Math.round(Number(d.x)||0),0,WW),y:clamp(Math.round(Number(d.y)||0),0,WH)}))}
@@ -1908,7 +1915,7 @@ let pubT=null,pubLast=0;
 function publishVillage(now){if(!DB||!UID||S.visiting||!S.created||!S.me)return;if(now){clearTimeout(pubT);pubT=null;pubDo();return}if(pubT)return;pubT=setTimeout(()=>{pubT=null;pubDo()},Math.max(3000,45000-(Date.now()-pubLast)))}
 function pubDo(){if(!DB||!UID||S.visiting||!S.created||!S.me)return;pubLast=Date.now();{
   const snap={name:S.me.name,me:S.me,vname:S.vname,seed:S.seed,day:S.day,earned:Math.round(S.earned),builds:S.builds,land:S.land,
-    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now()};
+    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now(),rmTree:(S.rmTree||[]).slice(-400)};
   DB.doc('villages/'+UID).set(snap).catch(()=>{pubLast=0})}}
 function flushCloud(){try{if(csDirty)cloudSave(1);if(pubT)publishVillage(1)}catch(e){}}
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushCloud()});addEventListener('pagehide',flushCloud);
@@ -1980,6 +1987,7 @@ function visit(id){const v=NB[id];if(!v||!S.created)return;if(!isFriend(id)){toa
   const V=fresh();V.created=true;V.visiting=true;V.hostId=id;V.seed=Number(v.seed)||1;V.day=Math.max(1,Number(v.day)||1);V.vname=String(v.vname||'이웃 마을').slice(0,12);V.me=cleanMe(v.me);V.earned=Number(v.earned)||0;
   V.builds={};for(const b of BUILDS){const q=v.builds&&v.builds[b.id];const n=q===true?1:clamp(Math.floor(Number(q)||0),0,b.max);if(n)V.builds[b.id]=n}
   V.land={};for(const pc of PARCELS)if(v.land&&v.land[pc.id]===true)V.land[pc.id]=true;
+  V.rmTree=Array.isArray(v.rmTree)?v.rmTree.filter(k=>typeof k==='string'&&/^-?\d+_-?\d+$/.test(k)).slice(0,400):[];
   const okSp=k=>!!(SPC[k]||ECO[k]||LSP[k]),cells=a=>(Array.isArray(a)?a:[]).map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<20).slice(0,20);
   const st=Array.isArray(v.stands)?v.stands.slice(0,12).map(x=>Object.assign(freshStand(clamp(Number(x.age)||0,0,80),clamp(Number(x.q)||50,0,100)),{fn:FN[x.fn]?x.fn:'timber',mix:Array.isArray(x.mix)?x.mix.filter(okSp).slice(0,5):undefined,burnt:cells(x.burnt),young:cells(x.young),bio:clamp(Number(x.bio)||0,0,100),fac:Object.fromEntries(Object.keys(FAC).filter(k=>x.fac&&x.fac[k]===true).map(k=>[k,true])),sp:okSp(x.sp)?x.sp:'pine',loc:LOCN[x.loc]?x.loc:'home',cut:!!x.cut,pest:clamp(Number(x.pest)||0,0,12),needs:{weed:!!(x.needs&&x.needs.weed),vine:!!(x.needs&&x.needs.vine),prune:!!(x.needs&&x.needs.prune),thin:!!(x.needs&&x.needs.thin)}})):[];
   if(st.length)V.stands=st;V.prev={tower:!!v.tower,sabang:!!v.sabang};V.rack=Array.isArray(v.rack)?v.rack.slice(0,6).map(r=>r&&typeof r==='object'?{d:clamp(Number(r.d)||0,0,3)}:null):[null,null];
@@ -3137,7 +3145,7 @@ const streamY=x=>575+SYA*Math.sin(x/SYF+SYP);
 const ZONES=[
   {id:'work',kind:'bld',x:700,y:850,r:100,n:'공방',ds:'요리·선물세트를 만들고 곶감을 말려요. 여기서 쉬면 하루를 마쳐요.',s:[628,898],ic:'pot'},
   {id:'market',kind:'bld',x:1070,y:1170,r:120,n:'장터',ds:'손님 주문을 받고 좌판에서 물건을 팔아요.',s:[950,1260],ic:'stall'},
-  {id:'tools',kind:'bld',x:320,y:1110,r:90,n:'도구 가게',ds:'장비를 갖추면 더 많이, 더 귀하게 거둬요.',s:[225,1095],ic:'tool'},
+  {id:'tools',kind:'bld',x:296,y:1122,r:90,n:'도구 가게',ds:'장비를 갖추면 더 많이, 더 귀하게 거둬요.',s:[225,1095],ic:'tool'},
   {id:'stand',kind:'bld',x:225,y:790,r:135,n:'조림지',ds:'숲가꾸기로 나무를 키워 좋은 목재를 거둬요.',s:[345,900],ic:'tree'},
   {id:'factory',kind:'bld',x:720,y:1340,r:105,n:'목재 가공 공장',ds:'원목을 품질에 맞게 연료·보드·건축재로 가공해요.',s:[600,1380],ic:'saw'},
   {id:'build',kind:'bld',x:1290,y:840,r:200,n:'휴양림 터',ds:'목제품으로 벤치·정자·숲속의 집을 지어요.',s:[1335,960],ic:'cabin'},
@@ -3199,7 +3207,7 @@ function buildWorld(seed){
   add('house',700,800);solid(655,772,40);solid(745,772,40);
   add('jars',812,808);solid(812,800,18);
   STALL.forEach(([x,y,col])=>{add('stall',x,y,1,{col});solid(x,y-14,30)});
-  add('shed',320,1068);solid(320,1050,38);
+  add('shed',292,1132);solid(292,1110,36);
   add('factory',720,1290);solid(670,1262,44);solid(770,1262,44);add('logpile',830,1305);solid(830,1298,22);
   add('post',165,150);solid(165,136,32);solid(RBX,RBY-8,24);add('tower',245,140);
   
@@ -3224,7 +3232,8 @@ function buildWorld(seed){
   [[-75,-90],[20,-115],[85,-10],[-90,48],[20,95],[125,-90],[110,82]].forEach(([dx,dy])=>tree(zj.x+dx,zj.y+dy,'jat',1.3,'#2c5534'));
   tree(962,915,'gam',1.35,'#5a7a30');
   [[245,1265],[392,1255],[300,1395]].forEach(([x,y])=>tree(x,y,'bam',1.2,'#7f9a34'));
-  ZONES.forEach(z=>{if(z.kind!=='land')add('sign',z.s[0],z.s[1],1,{txt:z.n})});
+  const OWNPLATE=['tools','work','factory','home','neighbors']; // 건물에 이름표가 있으면 길가 표지판은 생략
+  ZONES.forEach(z=>{if(z.kind!=='land'&&!OWNPLATE.includes(z.id))add('sign',z.s[0],z.s[1],1,{txt:z.n})});
   const pal=['#c8452a','#d9862a','#e0b23a','#9a3a2a','#6f8f3c','#e2c23a','#b8602a'].sort(()=>R()-.5).slice(0,4+Math.floor(R()*3));
   const pineBias=.15+R()*.3;
   for(let i=0;i<900&&OBJ.length<380;i++){const x=20+R()*(WW-40),y=40+R()*(WH-50);
@@ -3233,8 +3242,12 @@ function buildWorld(seed){
     if(pathDist(x,y)<44||Math.abs(y-streamY(x))<50)continue;
     if(OBJ.some(o=>Math.hypot(o.x-x,o.y-y)<44))continue;
     const pine=(y<600&&R()<.55)||R()<pineBias;
-    tree(x,y,pine?'pine':'broad',.8+R()*.5,pine?(R()<.5?'#2f5a35':'#36633a'):pal[Math.floor(R()*pal.length)]);
+    tree(x,y,pine?'pine':'broad',.8+R()*.5,pine?(R()<.5?'#2f5a35':'#36633a'):pal[Math.floor(R()*pal.length)]);OBJ[OBJ.length-1].vil=1;
   }
+  // 마을 나무 솎기: 가장자리 숲은 남기고 마을 한가운데는 듬성듬성, 캐낸 나무는 빼요
+  const rm=new Set(Array.isArray(S.rmTree)?S.rmTree:[]),hz=(x,y)=>{const v=Math.sin(x*12.9898+y*78.233)*43758.5453;return v-Math.floor(v)};
+  const TK=OBJ._taken;OBJ=OBJ.filter(o=>{if(!o.vil)return true;o.key=Math.round(o.x)+'_'+Math.round(o.y);const core=o.x>180&&o.x<WW-160&&o.y>540&&o.y<WH-120;
+    const keep=!rm.has(o.key)&&hz(o.x,o.y)<(core?.28:.7);if(!keep){const k=OBS.findIndex(b=>b.x===o.x&&b.y===o.y);if(k>=0)OBS.splice(k,1)}return keep});OBJ._taken=TK;
 }
 const BGS={};
 function buildBG(s){
@@ -3253,12 +3266,11 @@ function buildBG(s){
   ell(c,225,790,150,110,P.stand[0]);ell(c,225,790,135,96,P.stand[1]);
   c.strokeStyle=shade(P.stand[0].replace('#','#'),-14);c.lineWidth=2;for(let r=0;r<5;r++)ln(c,100,700+r*50,350,700+r*50);
   ell(c,180,170,110,70,P.slope[1]);ell(c,1240,830,150,100,P.mot[0]);
-  ell(c,1070,1160,175,115,P.plaza[0]);ell(c,1070,1160,155,98,P.plaza[1]);
-  ell(c,700,850,140,64,P.plaza[0]);ell(c,430,1080,80,40,P.plaza[0]);ell(c,730,1320,150,60,s===3?'#cfd2d4':'#a89a80');
+  ell(c,1070,1160,170,110,P.path[1]);
+  ell(c,700,850,140,64,P.path[1]);ell(c,430,1080,80,40,P.path[1]);ell(c,730,1320,150,60,P.path[1]);
   c.lineCap='round';c.lineJoin='round';
-  for(const p of PATHS){smooth(c,p);c.strokeStyle=P.path[0];c.lineWidth=38;c.stroke()}
-  for(const p of PATHS){smooth(c,p);c.strokeStyle=P.path[1];c.lineWidth=28;c.stroke()}
-  for(let i=0;i<300;i++){const x=R()*WW,y=R()*WH;if(pathDist(x,y)<14)circ(c,x,y,1.6+R()*1.5,P.path[0])}
+  for(const p of PATHS){smooth(c,p);c.strokeStyle=P.path[1];c.lineWidth=32;c.stroke()}
+  c.globalAlpha=.35;for(let i=0;i<300;i++){const x=R()*WW,y=R()*WH;if(pathDist(x,y)<12)circ(c,x,y,1.4+R()*1.3,P.path[0])}c.globalAlpha=1;
   const sp=[];for(let x=-20;x<=WW+20;x+=20)sp.push([x,streamY(x)]);
   c.beginPath();sp.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.strokeStyle=P.water[0];c.lineWidth=50;c.stroke();
   c.strokeStyle=P.water[1];c.lineWidth=40;c.stroke();c.strokeStyle=P.water[2];c.lineWidth=28;c.stroke();
@@ -3513,6 +3525,7 @@ const DRAW={
   ltree(c,o){const{x,y,sp}=o,s=o.s||1,SS=curSea,t0=o.t0;
     let k=s;if(t0!==undefined){const a=Math.min(1,(clock-t0)/.5);k=s*(a<1?.4+.6*Math.sin(a*Math.PI/2)*1.15:1)}
     ell(c,x+3*k,y,20*k,6*k,'rgba(0,0,0,.18)');
+    if(sp==='sonamu'){pineAt(c,x,y,k*1.05,SS===3?'#3f6a44':'#2f6234',0);return}
     const bare=(col)=>{c.strokeStyle=col||'#5a3d24';c.lineCap='round';c.lineWidth=4*k;ln(c,x,y,x,y-36*k);c.lineWidth=2.4*k;ln(c,x,y-26*k,x-14*k,y-44*k);ln(c,x,y-30*k,x+13*k,y-48*k);ln(c,x,y-36*k,x+2*k,y-54*k);c.lineWidth=1.4*k;ln(c,x-14*k,y-44*k,x-20*k,y-50*k);ln(c,x+13*k,y-48*k,x+19*k,y-52*k);
       if(SS===3){[[-14,-45],[13,-49],[2,-55]].forEach(([dx,dy])=>ell(c,x+dx*k,y+dy*k,4.4*k,1.8*k,'#f6f8fa'))}};
     const blob=(cA,cB,r)=>{rr(c,x-3*k,y-26*k,6*k,28*k,2,'#5a3d24');r=r||1;[[-11,-36,14],[11,-38,14],[0,-50,16],[0,-34,13]].forEach(([dx,dy,rad],i)=>circ(c,x+dx*k,y+dy*k,rad*k*r,i===2?cB:cA))};
@@ -3760,7 +3773,7 @@ function wframe(now){
   L.push({t:'person',y:P.y,ref:P,o:{shirt:pm.shirt,pants:'#3b3b46',hat:pm.hat,hatC:'#2f4a3a',hair:pm.hair,jige:true,load:ME?Object.values(ME.inv).reduce((a,b)=>a+b,0):load,name:pm.name,me:true}});
   if(S.visiting&&S.me&&!liveHostHere()){HOST.face=P.x<HOST.x?'left':'right';L.push({t:'person',y:HOST.y,ref:HOST,o:{shirt:S.me.shirt,pants:'#3b3b46',hat:S.me.hat,hatC:'#2f4a3a',hair:S.me.hair,jige:true,load:3,name:S.me.name,talk:1}})}
   (S.deco||[]).forEach((d,i)=>{if(d.x>cam.x-60&&d.x<cam.x+vw+60&&d.y>cam.y-20&&d.y<cam.y+vh+120)L.push({t:'ltree',x:d.x,y:d.y,sp:d.sp,s:1,t0:DPOP[i]})});
-  const nn=nearNPC(),nd=nearDeco();
+  const nn=nearNPC(),nd=nearDeco(),nt=nd<0?nearVTree():-1;
   NPCS.forEach((n,i)=>{const p=PEOPLE[i];L.push({t:'person',y:n.y,ref:n,o:{shirt:p.shirt,pants:p.pants,hat:p.hat,hatC:p.hatC,helmet:p.helmet,name:p.n,talk:1,ring:i===nn}})});
   for(let i=0;i<nv;i++){const v=VIS[i];L.push({t:'person',y:v.y,ref:v,o:{shirt:v.shirt,pants:'#3a3a40',hat:i%2?'cap':'none',hatC:'#f2ecdf',pack:v.pack,name:''}})}
   if(!fireActive()&&S.wx!=='폭우')for(const st of S.stands)if(fnOf(st)==='welfare'&&!st.cut)wvisFor(st).forEach((v,i)=>L.push({t:'person',y:v.y,ref:v,o:{shirt:v.shirt,pants:'#3a3a40',hat:i%2?'bucket':'none',hatC:'#e3bd62',pack:v.pack,name:''}}));
@@ -3796,17 +3809,19 @@ function wframe(now){
     else if(curSea===2){for(let i=0;i<14;i++){const x=(((i*151+Math.sin(clock*.7+i)*40+clock*14)%pw)+pw)%pw,y=(i*89+clock*(20+(i%3)*8))%ph;c.save();c.translate(x*D,y*D);c.rotate(Math.sin(clock*2+i));ell(c,0,0,4*D,2.2*D,['#d9862a','#c8452a','#e0b23a'][i%3]);c.restore()}}
     else if(curSea===1&&f>.35){for(let i=0;i<18;i++){const x=(i*113+Math.sin(clock*.6+i)*30)%pw,y=(i*67+Math.cos(clock*.5+i)*24)%ph;c.globalAlpha=.4+.4*Math.sin(clock*3+i);circ(c,x*D,y*D,2.6*D,'#f6f08a');c.globalAlpha=1}}}
   if(frameN%4===0)drawMini();
-  updAct(nz,nn,nd);
+  updAct(nz,nn,nd,nt);
 }
 function drawMini(){const m=mini.getContext('2d'),k=mini.width/WW;m.setTransform(1,0,0,1,0,0);m.drawImage(BG.cv,0,0,mini.width,mini.height);m.fillStyle='rgba(20,37,29,.25)';m.fillRect(0,0,mini.width,mini.height);
   for(const z of ZONES)circ(m,z.x*k,z.y*k,z.kind==='game'?7:9,z.kind==='game'?'#dcc38c':'#f2ecdf');
   for(const n of NPCS)circ(m,n.x*k,n.y*k,4,'#9cdf7a');
   m.strokeStyle='#fff';m.lineWidth=2;m.strokeRect(cam.x*k,cam.y*k,VW/cam.z*k,VH/cam.z*k);
   circ(m,P.x*k,P.y*k,6+Math.sin(clock*5)*1.5,'#e46f27')}
-function updAct(z,ni,nd){
+function updAct(z,ni,nd,nt){
   if((placing||BPL)&&!S.visiting){const el=$('#act');if(el&&!el.hidden){el.hidden=true;actKey=''}return}
   if(ni<0&&nd>=0){const key='d'+nd+'|'+S.deco.length;if(key===actKey)return;actKey=key;const el=$('#act');if(!el)return;el.hidden=false;el.dataset.t=performance.now();const dd=S.deco[nd];
     el.innerHTML=`<div class="pic">${ltIcon(dd.sp)}</div><div style="min-width:0"><div class="nm">${LSP[dd.sp].n}</div><div class="ds">내가 심은 조경수예요. ${LSP[dd.sp].ds}</div></div><button class="btn ghost" data-dig="${nd}">캐서 옮기기</button>`;return}
+  if(ni<0&&nd<0&&nt>=0&&OBJ[nt]){const o=OBJ[nt],sp=vtSp(o),key='t'+o.key+'|'+Math.floor(S.sta);if(key===actKey)return;actKey=key;const el=$('#act');if(!el)return;el.hidden=false;el.dataset.t=performance.now();
+    el.innerHTML=`<div class="pic">${ltIcon(sp)}</div><div style="min-width:0"><div class="nm">마을 나무 · ${o.k==='pine'?'소나무':'활엽수'}</div><div class="ds">처음부터 마을에 있던 나무예요. 캐면 ${LSP[sp].n} 묘목으로 챙겨서, 원하는 곳에 다시 심을 수 있어요.</div></div><button class="btn ghost" data-vdig="${o.key}" ${S.sta>=5?'':'disabled'}>캐기<small style="display:block;font-size:11px;opacity:.85">체력 5</small></button>`;return}
   const key=ni>=0?'n'+ni:z?z.id+'|'+Math.floor(S.sta)+'|'+sea()+'|'+Math.floor(S.money/10000)+'|'+S.stands.length+'|'+Object.keys(S.land).length+'|'+!!S.visiting+'|'+(S.fire?S.fire.loc:'')+'|'+level():'';if(key===actKey)return;actKey=key;
   const el=$('#act');if(!el)return;el.hidden=!(z||ni>=0);if(el.hidden)return;el.dataset.t=performance.now();
   if(ni>=0){const p=PEOPLE[ni];el.innerHTML=`<div class="pic p">${portrait(p)}</div><div style="min-width:0"><div class="nm">${p.n}</div><div class="ds">${p.role} · ${p.topic} 이야기를 잘 알아요.</div></div><button class="btn" data-talk="${ni}:hello">이야기하기</button>`;return}
