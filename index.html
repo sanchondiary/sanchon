@@ -4,6 +4,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1b3127">
 <meta name="description" content="숲을 가꾸고 산촌 마을을 일구는 산림경영 게임">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="산촌일기">
+<meta property="og:title" content="산촌일기 · 같이 숲 가꿔요!">
+<meta property="og:description" content="나무를 심고 숲을 가꾸고, 산촌 마을을 일구는 산림경영 게임이에요. 친구 마을에도 놀러 와요!">
+<meta property="og:image" content="https://sanchondiary.github.io/sanchon/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:url" content="https://sanchondiary.github.io/sanchon/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1231,7 +1239,7 @@ neighbors(){setTimeout(loadNeighbors,0);
   return `<div class="sec">${back()}<h2>마을 버스정류장</h2><p class="sub">친구 코드로 맺은 이웃들의 마을이에요. 친구를 맺으면 버스를 타고 놀러 가서 숲을 구경하고, 방명록·하트를 남기고, 친구 장터에서 물건을 살 수 있어요. 내 마을도 하루를 마칠 때마다 이웃에게 새로 보여요.</p>
   <div class="card who"><div class="por" style="width:52px;height:52px">${charSvg(S.me||{shirt:'#3f6f8f',hat:'straw',hair:'#3a2a22'})}</div><div><div class="nm">${esc(S.vname)}</div><div class="q">${esc(S.me?S.me.name:'')}님의 마을 · ${DB?'이웃에게 공개 중':'연결 안 됨'}</div></div></div>
   <div class="card fcard"><div class="fcrow"><span>내 친구 코드</span><b>${DB?myCode():'—'}</b></div>
-    <div class="fcin"><input id="fcIn" maxlength="6" placeholder="친구 코드 6자리" autocomplete="off"><button class="btn" data-fcode>친구 신청</button></div>
+    <div class="fcin"><input id="fcIn" maxlength="6" placeholder="친구 코드 6자리" autocomplete="off"><button class="btn" data-fcode>친구 신청</button></div>${canInvite()?'<button class="btn moss" data-invite style="width:100%;margin-top:8px">💌 친구 초대하기 (링크 보내기)</button>':''}
     <p class="empty" style="font-size:12.5px;margin:8px 0 0">친구가 되면(서로 신청·수락) 버스를 타고 친구 마을에 놀러 갈 수 있어요. 친구 마을에선 구경만 할 수 있고, 장터에선 친구가 진열한 물건을 살 수 있어요.</p></div>
   <h3>이웃 마을 <small id="nbCnt" class="h3s"></small></h3><div id="nbList" class="sec"><div class="card"><p class="empty">이웃 마을을 찾는 중이에요…</p></div></div>
   <h3>우리 마을 방명록</h3><div id="gbMine" class="card notes"><p class="empty">불러오는 중…</p></div></div>`},
@@ -1267,6 +1275,7 @@ market(){
 settings(){const fb=window.SCFB,cl=!fb&&!!DB;
   return `<div class="sec"><h2>설정</h2><p class="sub">내 마을 정보와 계정, 저장을 관리해요.</p>
   <div class="card who"><div class="por" style="width:52px;height:52px">${charSvg(S.me||{shirt:'#3f6f8f',hat:'straw',hair:'#3a2a22'})}</div><div style="min-width:0"><div class="nm">${esc(S.vname||'')}</div><div class="q">${esc(S.me?S.me.name:'')}님 · ${year()}년차 ${SEASONS[sea()]} · 산림경영 Lv.${level()}${DB?` · 친구 코드 <b>${myCode()}</b>`:''}</div></div></div>
+  ${canInvite()?'<button class="btn moss" data-invite>💌 친구 초대하기 (링크 보내기)</button>':''}
   <h3>계정</h3>
   <div class="card" style="display:grid;gap:8px">${fb?`<p style="margin:0;font-size:13px">${fb.status()}</p><p style="margin:0;font-size:14px;line-height:1.55">${fb.who()}</p>${fb.isGoogle()?'<button class="btn ghost" data-gglink>다른 구글 계정으로 바꾸기</button><small style="color:var(--ink2);font-size:12px;line-height:1.5">바꾼 계정에 저장된 마을이 있으면 불러올지 물어봐요. 지금 마을은 원래 계정에 그대로 남아 있어요.</small>':'<button class="btn" data-gglink>구글로 로그인</button>'}`
     :`<p class="empty" style="margin:0">${cl?'Claude 계정으로 자동 저장되고 있어요. 다른 기기에서도 같은 Claude 계정으로 열면 이어서 할 수 있어요.':'지금은 이 기기에만 저장되고 있어요.'}</p>`}</div>
@@ -1344,6 +1353,7 @@ document.addEventListener('click',e=>{
   if(d.fmarket!==undefined){if(S.visiting)friendMarket();return}
   if(d.fbuy){friendBuy(d.fbuy);return}
   if(d.fadd){addFriend(d.fadd);return}
+  if(d.invite!==undefined){shareInvite();return}
   if(d.fdel){delFriend(d.fdel);return}
   if(d.ncut){const id=d.ncut,v=NB[id]||{};modal(`<h2>이웃 끊기</h2><p><b>${esc(v.vname||'이 마을')}</b>${v.me&&v.me.name?` (${esc(String(v.me.name))}님)`:''}을(를) 끊을까요?</p><ul><li>친구였다면 친구가 풀리고, 서로 놀러 갈 수 없어요.</li><li>받은 친구 신청은 거절돼요.</li><li>이 마을은 내 이웃 목록에서 보이지 않아요.</li></ul><p style="font-size:12.5px">상대에게 따로 알림은 가지 않아요. 버스정류장 맨 아래 ‘끊은 마을 다시 보기’로 되돌릴 수 있어요.</p><div class="tbtns"><button class="btn" style="background:var(--poison)" data-ncutok="${esc(id)}">끊기</button><button class="btn ghost" data-close>그만두기</button></div>`);return}
   if(d.ncutok){const id=d.ncutok;closeModal();S.nbHide=[...new Set([...(S.nbHide||[]),id])].slice(-200);save();
@@ -1908,7 +1918,7 @@ function createChar(){const d=CR||(CR={name:'',vname:'',shirt:SHIRTS[ri(SHIRTS.l
   <div class="fld">머리색<div class="sw">${HAIRS.map(c=>`<button class="swc ${d.hair===c?'on':''}" style="background:${c}" data-crr="${c}" aria-label="머리색 ${c}"></button>`).join('')}</div></div>
   <button class="btn" data-crgo>이 모습으로 시작하기</button><button class="btn ghost" data-savemv>이미 하던 게임 이어하기</button><p class="tknow">마을의 개울과 숲, 지붕 모양은 사람마다 조금씩 달라요</p>`)}
 function crKeep(){if(!CR)return;const a=$('#crName'),b=$('#crV');if(a)CR.name=a.value;if(b)CR.vname=b.value}
-function crDone(){crKeep();S.me=cleanMe({name:CR.name.trim()||'숲지기',shirt:CR.shirt,hat:CR.hat,hair:CR.hair});S.vname=(CR.vname.trim()||'솔바람 마을').slice(0,10);
+function crDone(){setTimeout(()=>{try{invBoot()}catch(e){}},2500);crKeep();S.me=cleanMe({name:CR.name.trim()||'숲지기',shirt:CR.shirt,hat:CR.hat,hair:CR.hair});S.vname=(CR.vname.trim()||'솔바람 마을').slice(0,10);
   if(!S.seed)S.seed=1+ri(2e9);S.created=true;CR=null;save();publishVillage();closeModal();OBJ=null;render();tutIntro()}
 /* 클라우드 저장은 1분에 한 번 + 앱을 닫거나 다른 화면으로 갈 때 (쓰기 횟수 절약) */
 let csT=null,csLast=0,csDirty=false;
@@ -2014,7 +2024,7 @@ function guestbook(){const list=(GB[S.hostId]||[]).sort((a,b)=>b.t-a.t).slice(0,
   if(UID==='u_VHxfCtb8PzjdaAeFh_nooA'&&S.created&&!S.rst1107&&!S.visiting){S.rst1107=1;let back=0;for(const id of ['e2','s2']){if(S.land&&S.land[id]){const pc=PARCELS.find(q=>q.id===id);back+=pc?pc.price:0;delete S.land[id]}S.stands=S.stands.filter(x=>x.loc!==id);if(S.wguest)S.wguest=S.wguest.filter(g=>g.loc!==id)}
     S.cur=Math.min(S.cur||0,S.stands.length-1);bindStand(S);S.money+=back;save();publishVillage();OBJ=null;render();renderTop();toast(`장터 옆 공터와 남동 언덕을 사기 전 상태로 되돌렸어요. 땅값 ${won(back)}원을 돌려받았어요.`)}
   if(!S.created){const snap=await DB.doc('data/users/'+UID+'/save').get();if(snap.exists){try{const o=JSON.parse(snap.data().json);if(o&&o.created&&o.up){S=o;migrateState();bindStand(S);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}closeModal();OBJ=null;render();toast(`${S.vname}을(를) 불러왔어요. 다시 오신 걸 환영해요!`)}}catch(e){}}}
-  if(S.created){if(wraf)liveStart();loadFriends();checkSales();publishVillage();cloudSave();try{const ns=await DB.collection('notes').limit(300).get();let n=0;ns.docs.forEach(d=>{const m=(d.data()||{}).msgs||{};if(m[UID]&&(Number(m[UID].t)||0)>(S.gbSeen||0))n++});if(n)toast(`이웃이 남긴 방명록이 ${n}개 있어요. 버스정류장에서 확인해요.`)}catch(e){}}
+  if(S.created){if(wraf)liveStart();loadFriends().then(()=>invBoot());checkSales();publishVillage();cloudSave();try{const ns=await DB.collection('notes').limit(300).get();let n=0;ns.docs.forEach(d=>{const m=(d.data()||{}).msgs||{};if(m[UID]&&(Number(m[UID].t)||0)>(S.gbSeen||0))n++});if(n)toast(`이웃이 남긴 방명록이 ${n}개 있어요. 버스정류장에서 확인해요.`)}catch(e){}}
 }catch(e){}})();
 
 /* ---------- end of day & disasters ---------- */
@@ -3852,6 +3862,18 @@ addEventListener('keydown',e=>{if(!wraf||!$('#modal').hidden||!$('#stage').hidde
 addEventListener('keyup',e=>{const k=KM[e.key.toLowerCase()];if(k)keys[k]=0});
 addEventListener('blur',()=>keys={});
 
+/* ---------- 친구 초대: 초대 문구 + 링크 공유, 링크로 들어오면 자동 친구 신청 ---------- */
+const canInvite=()=>!!window.SCFB&&/^https?:/.test(location.protocol);
+function inviteUrl(){return location.origin+location.pathname+'?f='+myCode()}
+function inviteText(){const m=cleanMe(S.me);return `🌲 산촌일기에서 같이 숲 가꿔요!\n${S.vname||'우리 마을'}의 ${m.name}님이 초대했어요.\n링크를 누르면 바로 이웃 신청이 가요. (친구 코드 ${myCode()})`}
+async function shareInvite(){if(!DB){toast('서버에 연결된 뒤 초대할 수 있어요.');return}const url=inviteUrl(),text=inviteText();
+  try{if(navigator.share){await navigator.share({title:'산촌일기 초대',text,url});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const all=text+'\n'+url;try{await navigator.clipboard.writeText(all);toast('초대 문구와 링크를 복사했어요. 카카오톡에 붙여 넣어 보내세요.')}catch(e){modal(`<h2>친구 초대하기</h2><p>아래 내용을 길게 눌러 복사해서 보내 주세요.</p><textarea readonly rows="6" style="width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px;border-radius:10px;border:1px solid #2b262033;background:#fff;color:var(--ink)">${esc(all)}</textarea><button class="btn ghost" data-close>닫기</button>`)}}
+function invBoot(){let f='';try{f=(new URLSearchParams(location.search).get('f')||localStorage.getItem('sc-invite')||'').trim().toUpperCase()}catch(e){}
+  if(!/^[A-Z0-9]{4,8}$/.test(f))return;try{if(location.search)history.replaceState(null,'',location.pathname)}catch(e){}
+  if(!S.created||!DB||!UID){try{localStorage.setItem('sc-invite',f)}catch(e){}return}
+  try{localStorage.removeItem('sc-invite')}catch(e){}if(f===myCode())return;addByCode(f)}
+
 /* ---------- 친구 마을 실시간 대화: 공용 도구 ---------- */
 const PZ_PHR=['안녕하세요!','반가워요 😊','마을 구경 왔어요','숲이 정말 멋져요!','어서 와요!','천천히 둘러봐요','방명록 남기고 갈게요','장터 구경해도 돼요?','우리 마을에도 놀러 오세요','고마워요!','다음에 또 올게요','잘 가요 👋'];
 const PZ_EMO=['👋','😊','😂','❤️','👍','🌲','🍂','🙇'];
@@ -3900,6 +3922,7 @@ function bubLive(c){if(!LV)return;const now=performance.now();const B=(x,y,txt,a
   for(const q of LV.peers.values()){if(q.blocked)continue;if(q.sayTxt)B(q.x,q.y,q.sayTxt,q.sayAt);if(q.emoTxt)B(q.x,q.y,q.emoTxt,q.emoAt,true)}}
 const liveHostHere=()=>!!(LV&&S.visiting&&[...LV.peers.values()].some(q=>q.owner&&!q.blocked));
 
+try{const f0=new URLSearchParams(location.search).get('f');if(f0)localStorage.setItem('sc-invite',f0.toUpperCase())}catch(e){}
 render();
 setTimeout(()=>{try{evtPopup()}catch(e){}},1600);
 if(!S.created)createChar();
