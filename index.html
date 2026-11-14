@@ -3883,6 +3883,13 @@ else if(S.fire||S.fireEvt){modal(`<div class="big fire">산불이 아직 타고 
 })();
 </script>
 <script>
-if('serviceWorker' in navigator && location.protocol!=='file:'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  // 새 버전이 올라오면 알아서 받아 오고, 받은 뒤 한 번 새로 고침해요
+  const had=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||reloaded)return;reloaded=true;location.reload()});
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{
+    const up=()=>r.update().catch(()=>{});up();
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')up()});
+    setInterval(up,30*60000)}).catch(()=>{}))}
 </script>
 </body></html>
