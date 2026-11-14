@@ -1,6 +1,6 @@
 // 산촌일기 오프라인 실행용 서비스 워커
 // 게임 파일을 바꿔 다시 올릴 때 아래 버전 숫자를 1 올려 주세요.
-const VER = 'sanchon-v7';
+const VER = 'sanchon-v9';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
   'firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js', 'sanchon-cloud.js'];
 // 여기 적힌 곳만 저장해 둠 (Firebase 서버 통신은 건드리지 않음)

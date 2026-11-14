@@ -56,6 +56,7 @@
     },
     async google() {
       const p = new firebase.auth.GoogleAuthProvider();
+      p.setCustomParameters({ prompt: 'select_account' }); // 매번 계정 고르는 창 띄우기
       const u = auth.currentUser;
       try {
         if (u && u.isAnonymous) { await u.linkWithPopup(p); return { linked: true }; }

@@ -557,6 +557,7 @@ function portrait(n){
     :n.hat==='straw'?`<ellipse cx="50" cy="34" rx="44" ry="9" fill="#d9b25a"/><path d="M23 34Q23 6 50 6Q77 6 77 34Z" fill="#e6c46e"/><path d="M23 29H77" stroke="#c33" stroke-width="4"/>`:'';
   return svg(`<rect width="100" height="100" fill="#e6dcc6"/><path d="M20 100Q22 78 50 76Q78 78 80 100Z" fill="${n.shirt}"/><circle cx="50" cy="50" r="27" fill="#ffd9b8"/><path d="M23 48Q24 22 50 22Q76 22 77 48Q66 36 50 36Q34 36 23 48Z" fill="${n.old?'#d8d2c4':'#3a2a22'}"/><ellipse cx="40" cy="54" rx="3.4" ry="4.6" fill="#2b2018"/><ellipse cx="60" cy="54" rx="3.4" ry="4.6" fill="#2b2018"/><circle cx="41.2" cy="52.2" r="1.4" fill="#fff"/><circle cx="61.2" cy="52.2" r="1.4" fill="#fff"/><ellipse cx="32" cy="62" rx="5" ry="3" fill="#ff8a8a" opacity=".55"/><ellipse cx="68" cy="62" rx="5" ry="3" fill="#ff8a8a" opacity=".55"/><path d="M45 64Q50 69 55 64" stroke="#a5583a" stroke-width="2.4" fill="none" stroke-linecap="round"/>${n.old?'<path d="M34 46q4 -2 8 0M58 46q4 -2 8 0" stroke="#b58a6a" stroke-width="1.6" fill="none"/>':''}${n.beard?'<path d="M38 68Q50 84 62 68Q56 74 50 74Q44 74 38 68Z" fill="#e8e2d4"/>':''}${hat}`)}
 SP.icon={
+  set:svg(`<path d="M14 28H86M14 50H86M14 72H86" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><circle cx="34" cy="28" r="10" fill="#14251d" stroke="currentColor" stroke-width="7"/><circle cx="66" cy="50" r="10" fill="#14251d" stroke="currentColor" stroke-width="7"/><circle cx="42" cy="72" r="10" fill="#14251d" stroke="currentColor" stroke-width="7"/>`),
   leaf:svg(`<path d="M20 80Q20 22 82 18Q78 80 20 80Z" fill="currentColor"/><path d="M20 80L62 38" stroke="#14251d" stroke-width="5"/>`),
   pot:svg(`<path d="M16 42H84L76 86H24Z" fill="currentColor"/><rect x="10" y="34" width="80" height="10" rx="5" fill="currentColor"/><path d="M38 26q4-10 0-18M52 26q4-10 0-18M66 26q4-10 0-18" stroke="currentColor" stroke-width="5" fill="none" stroke-linecap="round"/>`),
   stall:svg(`<path d="M8 40L18 12H82L92 40Z" fill="currentColor"/><path d="M14 40V88M86 40V88M14 64H86" stroke="currentColor" stroke-width="8"/>`),
@@ -1041,7 +1042,7 @@ const qLabel=q=>q>=75?'우량림':q>=50?'보통':q>=30?'관리 부족':'방치�
 
 /* ================= UI shell ================= */
 let tab='forest';
-const TABS=[['forest','숲','leaf'],['work','공방','pot'],['factory','목재','saw'],['market','장터','stall'],['tools','도구','tool']];
+const TABS=[['forest','숲','leaf'],['work','공방','pot'],['factory','목재','saw'],['market','장터','stall'],['tools','도구','tool'],['settings','설정','set']];
 function renderTop(){
   if(S.visiting){$('#day').innerHTML=`${esc(S.vname)}<small>${esc(S.me.name)}님의 마을 · 구경 중</small>`;$('#staTxt').textContent=`${Math.round(ME.sta)} / ${100+20*ME.up.boots}`;$('#staBar').style.width=(ME.sta/(100+20*ME.up.boots)*100)+'%';$('#money').innerHTML=`${won(ME.money)}<small>원</small>`;$('#sleep').textContent='우리 마을로';return}
   $('#sleep').textContent='하루 마치기';
@@ -1066,13 +1067,13 @@ async function svUnpack(c){c=(c||'').trim().replace(/\s+/g,'');if(c[0]==='{')ret
   return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text())}
 function svApply(o){if(!o||!o.created||!o.up)throw 0;localStorage.setItem(KEY,JSON.stringify(o));try{const h=window.claude&&window.claude.hot;if(h&&h.data)delete h.data.S}catch(e){}location.reload()}
 let SVP=null,SVRL=false;
-function svAsk(o){if(!o||!o.created||!o.up){toast('저장 내용이 올바르지 않아요.');return}SVP=o;modal(`<h2>이 저장을 불러올까요?</h2><div class="card" style="background:var(--paper2)"><b style="font-family:var(--display);font-weight:400;font-size:18px">${esc(o.name||'산주')}의 숲</b><p style="margin:4px 0 0">${o.day||1}일째 · 가진 돈 ${won(o.money||0)}원</p></div><p style="color:var(--persimmon-d)">지금 이 기기의 진행 상황은 덮어써져요.</p><div class="tbtns"><button class="btn moss" data-svyes>불러오기</button><button class="btn ghost" ${SVRL?'data-svno':'data-savemv'}>${SVRL?'불러오지 않기':'돌아가기'}</button></div>`)}
+function svAsk(o){if(!o||!o.created||!o.up){toast('저장 내용이 올바르지 않아요.');return}SVP=o;modal(`<h2>이 저장을 불러올까요?</h2><div class="card" style="background:var(--paper2)"><b style="font-family:var(--display);font-weight:400;font-size:18px">${esc(o.name||'산주')}의 숲</b><p style="margin:4px 0 0">${o.day||1}일째 · 가진 돈 ${won(o.money||0)}원</p></div><p style="color:var(--persimmon-d)">지금 이 기기의 진행 상황은 덮어써져요.</p><div class="tbtns"><button class="btn moss" data-svyes>불러오기</button><button class="btn ghost" ${SVRL?'data-svno':'data-savemv'}>${SVRL?'지금 마을 그대로 이 계정에 저장':'돌아가기'}</button></div>`)}
 function saveMove(d,e){
   if(d.svback!==undefined){if(!S.created)createChar();else closeModal();return true}
-  if(d.svno!==undefined){location.reload();return true}
+  if(d.svno!==undefined){if(SVRL){delete S.fcode;save()}location.reload();return true}
   if(d.gglink!==undefined){const b=e.target.closest('button');if(b)b.disabled=true;
     SCFB.google().then(async r=>{if(r.linked&&!S.created){toast('이 구글 계정에는 아직 저장이 없어요. 새 마을을 만들면 이 계정에 저장돼요.');createChar();return}if(r.linked){closeModal();toast('구글 계정에 연결했어요. 다른 기기에서도 같은 계정으로 로그인하면 이어서 할 수 있어요.');cloudSave();return}
-      const o=await SCFB.loadSave().catch(()=>null);if(o&&o.created&&o.up){SVRL=true;svAsk(o)}else if(!S.created){location.reload()}else{toast('이 구글 계정에는 아직 저장이 없어요. 지금 마을을 이 계정에 저장할게요.');setTimeout(()=>location.reload(),1500)}})
+      const o=await SCFB.loadSave().catch(()=>null);if(o&&o.created&&o.up){SVRL=true;svAsk(o)}else if(!S.created){location.reload()}else{delete S.fcode;save();toast('이 구글 계정에는 아직 저장이 없어요. 지금 마을을 이 계정에 저장하고 새 친구 코드를 만들게요.');setTimeout(()=>location.reload(),1800)}})
     .catch(err=>{if(b)b.disabled=false;const c=err&&err.code||'';toast(c==='auth/popup-blocked'?'팝업이 막혔어요. 팝업을 허용한 뒤 다시 눌러 주세요.':c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request'?'로그인을 취소했어요.':c==='auth/unauthorized-domain'?'Firebase 승인된 도메인에 이 주소를 추가해 주세요.':c==='auth/operation-not-allowed'?'Firebase에서 Google 로그인을 켜 주세요.':'로그인하지 못했어요. 잠시 뒤 다시 해 주세요.')});return true}
   if(d.svyes!==undefined){if(SVP){try{svApply(SVP)}catch(err){toast('불러오지 못했어요.')}}return true}
   if(d.savemv!==undefined){modal(`<h2>💾 저장 옮기기</h2><p>지금까지 키운 숲을 다른 기기나 앱 버전으로 옮길 수 있어요. 아래 방법 중 편한 것을 쓰세요.</p>
@@ -1083,7 +1084,7 @@ function saveMove(d,e){
   <textarea id="svIn" rows="3" style="font:12px monospace;width:100%;box-sizing:border-box;border-radius:8px;border:1px solid #2b262033;padding:6px;background:#fff;color:var(--ink)" placeholder="복사한 저장 코드를 여기에 붙여 넣으세요"></textarea>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn moss" data-svload>코드로 불러오기</button><label class="btn ghost" style="cursor:pointer">파일로 불러오기<input type="file" id="svFile" accept=".json,.txt,application/json,text/plain" hidden></label></div>
   <small style="color:var(--persimmon-d)">불러오면 이 기기의 지금 진행 상황은 덮어써져요.</small></div>
-  ${window.SCFB?`<div class="card" style="background:var(--paper2);display:grid;gap:8px"><b style="font-family:var(--display);font-weight:400;font-size:17px">③ 구글 계정으로 지키기</b><p style="margin:0;font-size:13px">${SCFB.status?SCFB.status():''}${S.created?` · 내 친구 코드 <b>${myCode()}</b>`:''}</p><p style="margin:0">${SCFB.who()}</p>${SCFB.isGoogle()?'':'<button class="btn" data-gglink>구글로 로그인</button>'}</div>`:''}
+  ${window.SCFB?`<div class="card" style="background:var(--paper2);display:grid;gap:8px"><b style="font-family:var(--display);font-weight:400;font-size:17px">③ 구글 계정으로 지키기</b><p style="margin:0;font-size:13px">${SCFB.status?SCFB.status():''}${S.created?` · 내 친구 코드 <b>${myCode()}</b>`:''}</p><p style="margin:0">${SCFB.who()}</p>${SCFB.isGoogle()?'<button class="btn ghost" data-gglink>다른 구글 계정으로 바꾸기</button><small style="color:var(--ink2);font-size:12px">바꾼 계정에 저장된 마을이 있으면 불러올지 물어봐요. 지금 마을은 원래 계정에 그대로 남아 있어요.</small>':'<button class="btn" data-gglink>구글로 로그인</button>'}</div>`:''}
   <button class="btn ghost" data-svback>${S.created?'닫기':'돌아가기'}</button>`);
     const f=$('#svFile');if(f)f.onchange=async()=>{const x=f.files&&f.files[0];if(!x)return;try{const o=await svUnpack(await x.text());svAsk(o)}catch(err){toast('저장 파일을 읽지 못했어요.')}};
     return true}
@@ -1117,7 +1118,7 @@ forest(){
   const f=lvl(riskFire()),s=lvl(riskSlide());
   return `<div class="world"><canvas id="wc" aria-label="숲속 마을. 화면을 눌러 캐릭터를 이동해요."></canvas>
   ${(()=>{const ti=titleI(),nx=TITLES[ti+1],pc=nx?Math.min(100,(S.earned-TITLES[ti][0])/(nx[0]-TITLES[ti][0])*100):100;return WGOPEN?`<div class="wgoal open"><button class="wgx" data-wgo aria-label="안내 접기">접기 ▲</button><span><b>산림경영 Lv.${level()}</b>${nextXP()?` · 다음 레벨까지 ${nextXP()}점`:' · 최고 레벨'}</span>${(()=>{const i=titleI(),nx=TITLES[i+1];return `<span>칭호 <b>${TITLES[i][1]}</b>${nx?` · <b>${nx[1]}</b>까지 ${won(Math.max(0,nx[0]-S.earned))}원`:' · 최고 칭호!'}</span><div class="bar"><i style="width:${nx?Math.min(100,(S.earned-TITLES[i][0])/(nx[0]-TITLES[i][0])*100):100}%"></i></div>`})()}
-  <span>${year()}년차 ${SEASONS[sea()]} ${seaDay()}일째${climL()?` · 기온 +${tempUp()}℃`:''}</span><span>${riskFire(S.wx)>=riskFire(S.fc)?S.wx:S.fc+' 예보'} · 산불 <span class="${f[1]}">${f[0]}</span> · 산사태 <span class="${s[1]}">${s[0]}</span>${(S.soil||0)>=50?` (흙 젖음 ${Math.round(S.soil)}%)`:''}</span>${fireBan()?'<span class="hi">오늘 장작 판매 금지</span>':''}${totalPest()?`<span class="hi">조림지 병해충 ${totalPest()}그루</span>`:''}${S.luck?`<span>까치의 행운 ${'●'.repeat(S.luck)}${'○'.repeat(3-S.luck)}</span>`:''}${S.visiting?'':'<button class="wgx" style="position:static;justify-self:start;margin-top:2px" data-savemv>💾 저장 옮기기</button>'}</div>`:(evtNow()?`<button class="wgoal mini evt" data-evtopen style="background:${evtNow().col};${fireBan()||totalPest()||f[1]==='hi'?'translate:0 34px':''}"><span>${evtNow().ic} ${evtNow().n} 행사 중</span></button>`:'')+(fireBan()||totalPest()||f[1]==='hi'?`<button class="wgoal mini warn" data-wgo aria-label="주의 안내 펼치기"><span class="hi">⚠ ${fireBan()?'장작 판매 금지':f[1]==='hi'?'산불 위험 높음':`병해충 ${totalPest()}그루`}</span></button>`:'')})()}
+  <span>${year()}년차 ${SEASONS[sea()]} ${seaDay()}일째${climL()?` · 기온 +${tempUp()}℃`:''}</span><span>${riskFire(S.wx)>=riskFire(S.fc)?S.wx:S.fc+' 예보'} · 산불 <span class="${f[1]}">${f[0]}</span> · 산사태 <span class="${s[1]}">${s[0]}</span>${(S.soil||0)>=50?` (흙 젖음 ${Math.round(S.soil)}%)`:''}</span>${fireBan()?'<span class="hi">오늘 장작 판매 금지</span>':''}${totalPest()?`<span class="hi">조림지 병해충 ${totalPest()}그루</span>`:''}${S.luck?`<span>까치의 행운 ${'●'.repeat(S.luck)}${'○'.repeat(3-S.luck)}</span>`:''}</div>`:(evtNow()?`<button class="wgoal mini evt" data-evtopen style="background:${evtNow().col};${fireBan()||totalPest()||f[1]==='hi'?'translate:0 34px':''}"><span>${evtNow().ic} ${evtNow().n} 행사 중</span></button>`:'')+(fireBan()||totalPest()||f[1]==='hi'?`<button class="wgoal mini warn" data-wgo aria-label="주의 안내 펼치기"><span class="hi">⚠ ${fireBan()?'장작 판매 금지':f[1]==='hi'?'산불 위험 높음':`병해충 ${totalPest()}그루`}</span></button>`:'')})()}
   <canvas id="mini" width="184" height="166" aria-label="미니맵"></canvas>
   <div class="zoom"><button data-zoom="1.2" aria-label="가까이 보기">＋</button><button data-zoom="0.833" aria-label="멀리 보기">－</button></div>
   <div class="act" id="act" hidden></div>
@@ -1256,6 +1257,15 @@ market(){
   ${DB?shelfHtml():''}
   </div>`;
 },
+settings(){const fb=window.SCFB,cl=!fb&&!!DB;
+  return `<div class="sec"><h2>설정</h2><p class="sub">내 마을 정보와 계정, 저장을 관리해요.</p>
+  <div class="card who"><div class="por" style="width:52px;height:52px">${charSvg(S.me||{shirt:'#3f6f8f',hat:'straw',hair:'#3a2a22'})}</div><div style="min-width:0"><div class="nm">${esc(S.vname||'')}</div><div class="q">${esc(S.me?S.me.name:'')}님 · ${year()}년차 ${SEASONS[sea()]} · 산림경영 Lv.${level()}${DB?` · 친구 코드 <b>${myCode()}</b>`:''}</div></div></div>
+  <h3>계정</h3>
+  <div class="card" style="display:grid;gap:8px">${fb?`<p style="margin:0;font-size:13px">${fb.status()}</p><p style="margin:0;font-size:14px;line-height:1.55">${fb.who()}</p>${fb.isGoogle()?'<button class="btn ghost" data-gglink>다른 구글 계정으로 바꾸기</button><small style="color:var(--ink2);font-size:12px;line-height:1.5">바꾼 계정에 저장된 마을이 있으면 불러올지 물어봐요. 지금 마을은 원래 계정에 그대로 남아 있어요.</small>':'<button class="btn" data-gglink>구글로 로그인</button>'}`
+    :`<p class="empty" style="margin:0">${cl?'Claude 계정으로 자동 저장되고 있어요. 다른 기기에서도 같은 Claude 계정으로 열면 이어서 할 수 있어요.':'지금은 이 기기에만 저장되고 있어요.'}</p>`}</div>
+  <h3>저장 옮기기</h3>
+  <div class="card" style="display:grid;gap:8px"><p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink2)">다른 휴대폰이나 앱 버전으로 지금까지 키운 마을을 옮길 때 써요. 저장 코드를 복사해서 새 기기에 붙여 넣으면 돼요.</p><button class="btn" data-savemv>💾 저장 옮기기</button></div>
+  </div>`},
 tools(){
   const learned=S.facts.map(k=>{const[a,b]=k.split('-').map(Number);return {p:PEOPLE[a],t:PEOPLE[a]&&PEOPLE[a].facts[b]}}).filter(x=>x.t);
   return `<div class="sec">
