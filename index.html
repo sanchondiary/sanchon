@@ -1313,6 +1313,10 @@ document.addEventListener('click',e=>{
   if(d.fbuy){friendBuy(d.fbuy);return}
   if(d.fadd){addFriend(d.fadd);return}
   if(d.fdel){delFriend(d.fdel);return}
+  if(d.ncut){const id=d.ncut,v=NB[id]||{};modal(`<h2>이웃 끊기</h2><p><b>${esc(v.vname||'이 마을')}</b>${v.me&&v.me.name?` (${esc(String(v.me.name))}님)`:''}을(를) 끊을까요?</p><ul><li>친구였다면 친구가 풀리고, 서로 놀러 갈 수 없어요.</li><li>받은 친구 신청은 거절돼요.</li><li>이 마을은 내 이웃 목록에서 보이지 않아요.</li></ul><p style="font-size:12.5px">상대에게 따로 알림은 가지 않아요. 버스정류장 맨 아래 ‘끊은 마을 다시 보기’로 되돌릴 수 있어요.</p><div class="tbtns"><button class="btn" style="background:var(--poison)" data-ncutok="${esc(id)}">끊기</button><button class="btn ghost" data-close>그만두기</button></div>`);return}
+  if(d.ncutok){const id=d.ncutok;closeModal();S.nbHide=[...new Set([...(S.nbHide||[]),id])].slice(-200);save();
+    if(FR.mine.includes(id)){setFriends(FR.mine.filter(x=>x!==id)).then(()=>loadNeighbors())}else loadNeighbors();toast('이웃을 끊었어요.');return}
+  if(d.nunhide!==undefined){S.nbHide=[];save();loadNeighbors();toast('끊은 마을을 다시 보여 줄게요.');return}
   if(d.fcode!==undefined){addByCode(($('#fcIn')||{}).value);return}
   if(d.shelf||d.unshelf){if(S.visiting)return;S.shelf=S.shelf||{};const id=d.shelf||d.unshelf;if(d.shelf&&prod(id)>0){S.prod[id]--;S.shelf[id]=shelfQ(id)+1}else if(d.unshelf&&shelfQ(id)>0){S.shelf[id]--;S.prod[id]=prod(id)+1}save();publishVillage();renderKeep();return}
   if(d.home!==undefined){goHome();return}
@@ -1870,13 +1874,18 @@ function createChar(){const d=CR||(CR={name:'',vname:'',shirt:SHIRTS[ri(SHIRTS.l
 function crKeep(){if(!CR)return;const a=$('#crName'),b=$('#crV');if(a)CR.name=a.value;if(b)CR.vname=b.value}
 function crDone(){crKeep();S.me=cleanMe({name:CR.name.trim()||'숲지기',shirt:CR.shirt,hat:CR.hat,hair:CR.hair});S.vname=(CR.vname.trim()||'솔바람 마을').slice(0,10);
   if(!S.seed)S.seed=1+ri(2e9);S.created=true;CR=null;save();publishVillage();closeModal();OBJ=null;render();tutIntro()}
-let csT=null;
-function cloudSave(){if(!DB||!UID||S.visiting||!S.created)return;clearTimeout(csT);csT=setTimeout(()=>{DB.doc('data/users/'+UID+'/save').set({json:JSON.stringify(S),t:Date.now()}).catch(()=>{})},4000)}
-let pubT=null;
-function publishVillage(){if(!DB||!UID||S.visiting||!S.created||!S.me)return;clearTimeout(pubT);pubT=setTimeout(()=>{
+/* 클라우드 저장은 1분에 한 번 + 앱을 닫거나 다른 화면으로 갈 때 (쓰기 횟수 절약) */
+let csT=null,csLast=0,csDirty=false;
+function csDo(){csT=null;if(!csDirty||!DB||!UID||S.visiting||!S.created)return;csDirty=false;csLast=Date.now();DB.doc('data/users/'+UID+'/save').set({json:JSON.stringify(S),t:csLast}).catch(()=>{csDirty=true})}
+function cloudSave(now){if(!DB||!UID||S.visiting||!S.created)return;csDirty=true;if(now){clearTimeout(csT);csDo();return}if(!csT)csT=setTimeout(csDo,Math.max(5000,60000-(Date.now()-csLast)))}
+let pubT=null,pubLast=0;
+function publishVillage(now){if(!DB||!UID||S.visiting||!S.created||!S.me)return;if(now){clearTimeout(pubT);pubT=null;pubDo();return}if(pubT)return;pubT=setTimeout(()=>{pubT=null;pubDo()},Math.max(3000,45000-(Date.now()-pubLast)))}
+function pubDo(){if(!DB||!UID||S.visiting||!S.created||!S.me)return;pubLast=Date.now();{
   const snap={name:S.me.name,me:S.me,vname:S.vname,seed:S.seed,day:S.day,earned:Math.round(S.earned),builds:S.builds,land:S.land,
     stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now()};
-  DB.doc('villages/'+UID).set(snap).catch(()=>{})},1500)}
+  DB.doc('villages/'+UID).set(snap).catch(()=>{pubLast=0})}}
+function flushCloud(){try{if(csDirty)cloudSave(1);if(pubT)publishVillage(1)}catch(e){}}
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushCloud()});addEventListener('pagehide',flushCloud);
 let NB={},GB={};
 /* --- friends, friend market (shelf) & sales inbox --- */
 let FR={mine:[],in:{},ready:false},FBUSY=false;
@@ -1925,14 +1934,18 @@ async function loadNeighbors(){const el=$('#nbList'),gm=$('#gbMine');if(!el)retu
   if(!DB||!UID){el.innerHTML=`<div class="card"><p class="empty">지금은 이웃 마을과 연결되지 않았어요. claude.ai에 로그인한 상태로 이 링크를 열면 이웃 마을이 보이고, 내 마을도 이웃에게 보여요.</p></div>`;gm.innerHTML='<p class="empty">연결되면 방명록이 여기 보여요.</p>';return}
   try{await loadFriends();const qs=await DB.collection('villages').orderBy('updated','desc').limit(60).get();const ns=await DB.collection('notes').limit(300).get();
     const hearts={};GB={};ns.docs.forEach(d=>{const v=d.data()||{};for(const[h,m]of Object.entries(v.msgs||{})){if(!m||typeof m!=='object')continue;(GB[h]=GB[h]||[]).push({from:String(v.name||'이웃').slice(0,8),m:String(m.m||'').slice(0,60),heart:!!m.heart,t:Number(m.t)||0});if(m.heart)hearts[h]=(hearts[h]||0)+1}});
-    NB={};qs.docs.forEach(d=>NB[d.id]=d.data());const all=qs.docs.filter(d=>d.id!==UID);
+    NB={};qs.docs.forEach(d=>NB[d.id]=d.data());const NBH=S.nbHide||[],STALE=14*864e5,now0=Date.now();
+    const quiet=d=>now0-(Number((d.data()||{}).updated)||0)>STALE;
+    const raw=qs.docs.filter(d=>d.id!==UID),nHid=raw.filter(d=>NBH.includes(d.id)).length,nOld=raw.filter(d=>!NBH.includes(d.id)&&quiet(d)&&!isFriend(d.id)).length;
+    const all=raw.filter(d=>!NBH.includes(d.id)&&(isFriend(d.id)||!quiet(d)));
     const rank=d=>isFriend(d.id)?0:FR.in[d.id]&&!FR.mine.includes(d.id)?1:FR.mine.includes(d.id)?2:3;const list=all.slice().sort((a,b)=>rank(a)-rank(b));
     const nf=all.filter(d=>isFriend(d.id)).length,nr=all.filter(d=>rank(d)===1).length;
     el.innerHTML=(nr?`<div class="card" style="border:2px solid #e4a640"><p class="empty" style="margin:0">받은 친구 신청 ${nr}개 · 수락하면 서로의 마을에 놀러 갈 수 있어요.</p></div>`:'')+(list.length?list.map(d=>{const v=d.data()||{},me=cleanMe(v.me),day=Math.max(1,Number(v.day)||1),nb=BUILDS.reduce((t,b)=>{const q=v.builds&&v.builds[b.id];return t+(q===true?1:clamp(Math.floor(Number(q)||0),0,b.max))},0),nl=PARCELS.filter(p=>v.land&&v.land[p.id]===true).length;
-      return `<div class="card ord"><div class="who"><div class="por" style="width:46px;height:46px">${charSvg(me)}</div><div style="min-width:0"><div class="nm">${esc(v.vname||'이름 없는 마을')} ${rank(d)===0?'<small class="tag on">친구</small>':rank(d)===1?'<small class="tag" style="background:#e4a640;color:#2a1a08">친구 신청 받음</small>':rank(d)===2?'<small class="tag">수락 기다리는 중</small>':''}</div><div class="q">${esc(me.name)}님 · ${year(day)}년차 ${SEASONS[sea(day)]} · 누적 ${won(Number(v.earned)||0)}원</div></div></div>
+      return `<div class="card ord"><div class="who"><div class="por" style="width:46px;height:46px">${charSvg(me)}</div><div style="min-width:0"><div class="nm">${esc(v.vname||'이름 없는 마을')} ${rank(d)===0?'<small class="tag on">친구</small>'+(quiet(d)?' <small class="tag">2주 넘게 쉬는 중</small>':''):rank(d)===1?'<small class="tag" style="background:#e4a640;color:#2a1a08">친구 신청 받음</small>':rank(d)===2?'<small class="tag">수락 기다리는 중</small>':''}</div><div class="q">${esc(me.name)}님 · ${year(day)}년차 ${SEASONS[sea(day)]} · 누적 ${won(Number(v.earned)||0)}원</div></div></div>
       <div class="want"><div class="w">시설 ${nb}개 · ♥ ${hearts[d.id]||0}${v.shelf&&Object.keys(v.shelf).length?' · 장터 진열 중':''}</div>
-      ${rank(d)===0?`<div style="display:flex;gap:6px"><button class="btn ghost" data-fdel="${esc(d.id)}" style="padding:6px 10px">끊기</button><button class="btn" data-visit="${esc(d.id)}">놀러 가기</button></div>`:rank(d)===1?`<button class="btn" data-fadd="${esc(d.id)}">수락하기</button>`:rank(d)===2?`<button class="btn ghost" data-fdel="${esc(d.id)}">신청 취소</button>`:`<button class="btn ghost" data-fadd="${esc(d.id)}">친구 신청</button>`}</div></div>`}).join('')
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-ncut="${esc(d.id)}" style="padding:6px 10px">끊기</button>${rank(d)===0?`<button class="btn" data-visit="${esc(d.id)}">놀러 가기</button>`:rank(d)===1?`<button class="btn" data-fadd="${esc(d.id)}">수락하기</button>`:rank(d)===2?`<button class="btn ghost" data-fdel="${esc(d.id)}">신청 취소</button>`:`<button class="btn ghost" data-fadd="${esc(d.id)}">친구 신청</button>`}</div></div></div>`}).join('')
       :`<div class="card"><p class="empty">아직 다른 마을이 없어요. 이 링크를 친구에게 공유하면 친구가 만든 마을이 여기 나타나요.</p></div>`);
+    if(nOld||nHid)el.insertAdjacentHTML('beforeend',`<div class="card"><p class="empty" style="margin:0">${nOld?`2주 넘게 안 들어온 마을 ${nOld}곳은 목록에서 숨겼어요. 다시 들어오면 나타나요.`:''}${nOld&&nHid?'<br>':''}${nHid?`내가 끊은 마을 ${nHid}곳은 보이지 않아요.`:''}</p>${nHid?'<button class="btn ghost" data-nunhide style="margin-top:8px">끊은 마을 다시 보기</button>':''}</div>`);
     const fc=$('#nbCnt');if(fc)fc.textContent=`친구 ${nf}명`;
     const mine=(GB[UID]||[]).sort((a,b)=>b.t-a.t);S.gbSeen=Date.now();save();
     gm.innerHTML=mine.length?mine.map(m=>`<div class="note">${m.heart?'<b style="color:#c8432b">♥</b> ':''}${esc(m.m||'하트를 보냈어요')}<small>${esc(m.from)} · ${m.t?new Date(m.t).toLocaleDateString('ko-KR'):''}</small></div>`).join(''):'<p class="empty">아직 방명록이 없어요. 이웃이 놀러 오면 여기 남겨져요.</p>';
@@ -1960,7 +1973,7 @@ function guestbook(){const list=(GB[S.hostId]||[]).sort((a,b)=>b.t-a.t).slice(0,
   if(UID==='u_VHxfCtb8PzjdaAeFh_nooA'&&S.created&&!S.rst1107&&!S.visiting){S.rst1107=1;let back=0;for(const id of ['e2','s2']){if(S.land&&S.land[id]){const pc=PARCELS.find(q=>q.id===id);back+=pc?pc.price:0;delete S.land[id]}S.stands=S.stands.filter(x=>x.loc!==id);if(S.wguest)S.wguest=S.wguest.filter(g=>g.loc!==id)}
     S.cur=Math.min(S.cur||0,S.stands.length-1);bindStand(S);S.money+=back;save();publishVillage();OBJ=null;render();renderTop();toast(`장터 옆 공터와 남동 언덕을 사기 전 상태로 되돌렸어요. 땅값 ${won(back)}원을 돌려받았어요.`)}
   if(!S.created){const snap=await DB.doc('data/users/'+UID+'/save').get();if(snap.exists){try{const o=JSON.parse(snap.data().json);if(o&&o.created&&o.up){S=o;migrateState();bindStand(S);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}closeModal();OBJ=null;render();toast(`${S.vname}을(를) 불러왔어요. 다시 오신 걸 환영해요!`)}}catch(e){}}}
-  if(S.created){loadFriends();checkSales();publishVillage();try{const ns=await DB.collection('notes').limit(300).get();let n=0;ns.docs.forEach(d=>{const m=(d.data()||{}).msgs||{};if(m[UID]&&(Number(m[UID].t)||0)>(S.gbSeen||0))n++});if(n)toast(`이웃이 남긴 방명록이 ${n}개 있어요. 버스정류장에서 확인해요.`)}catch(e){}}
+  if(S.created){loadFriends();checkSales();publishVillage();cloudSave();try{const ns=await DB.collection('notes').limit(300).get();let n=0;ns.docs.forEach(d=>{const m=(d.data()||{}).msgs||{};if(m[UID]&&(Number(m[UID].t)||0)>(S.gbSeen||0))n++});if(n)toast(`이웃이 남긴 방명록이 ${n}개 있어요. 버스정류장에서 확인해요.`)}catch(e){}}
 }catch(e){}})();
 
 /* ---------- end of day & disasters ---------- */
