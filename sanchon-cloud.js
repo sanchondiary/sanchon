@@ -28,7 +28,22 @@
 
   // 게임의 저장 경로 'data/users/<id>/save' → Firestore 'saves/<id>'
   const map = p => { const m = /^data\/users\/([^/]+)\/save$/.exec(p); return m ? 'saves/' + m[1] : p; };
-  const db = { doc: p => fs.doc(map(p)), collection: n => fs.collection(n) };
+  // 저장 성공·실패를 기록해 두어 게임 화면에서 연결 상태를 보여 줌
+  const LOG = { ok: {}, err: '' };
+  const wrapDoc = p => {
+    const ref = fs.doc(map(p));
+    return {
+      id: ref.id,
+      get: () => ref.get(),
+      set: v => {
+        try {
+          return ref.set(v).then(r => { LOG.ok[p.split('/')[0]] = Date.now(); LOG.err = ''; return r; },
+            e => { LOG.err = (e && (e.code || e.message)) || '알 수 없는 오류'; throw e; });
+        } catch (e) { LOG.err = (e && e.message) || '알 수 없는 오류'; return Promise.reject(e); }
+      }
+    };
+  };
+  const db = { doc: wrapDoc, collection: n => fs.collection(n) };
 
   window.SCFB = {
     auth, fs, ready,
@@ -51,6 +66,13 @@
         }
         throw e;
       }
+    },
+    status() {
+      const u = auth.currentUser, t = LOG.ok.villages, tm = x => new Date(x).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      if (!u) return '<span style="color:#b8372b">서버 연결 안 됨 · 인터넷 연결을 확인해 주세요.</span>';
+      if (LOG.err) return `<span style="color:#b8372b">서버 저장 오류 · ${String(LOG.err).replace(/[<>&]/g, '').slice(0, 80)}</span>`;
+      if (t) return `<span style="color:#4f8a3a">✓ 서버 연결됨 · 내 마을 등록 ${tm(t)}</span>`;
+      return '서버 연결됨 · 내 마을을 올리는 중이에요 (몇 초 걸려요)';
     },
     async loadSave() {
       const u = auth.currentUser; if (!u) return null;
