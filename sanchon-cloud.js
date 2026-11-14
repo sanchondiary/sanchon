@@ -12,6 +12,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth(), fs = firebase.firestore();
+  try { fs.settings({ ignoreUndefinedProperties: true }); } catch (e) {}
 
   // 처음엔 이름 없는(익명) 계정으로 자동 접속 → 나중에 구글 계정으로 올릴 수 있음
   const ready = new Promise(res => {
