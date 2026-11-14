@@ -8,7 +8,9 @@
     projectId: "sanchondiary-aa415",
     storageBucket: "sanchondiary-aa415.firebasestorage.app",
     messagingSenderId: "916476819863",
-    appId: "1:916476819863:web:9cddd1adaeaa0b90a7acd2"
+    appId: "1:916476819863:web:9cddd1adaeaa0b90a7acd2",
+    // 실시간 데이터베이스 주소 (콘솔의 Realtime Database 화면 맨 위에 나오는 주소)
+    databaseURL: "https://sanchondiary-aa415-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth(), fs = firebase.firestore();
@@ -45,7 +47,45 @@
   };
   const db = { doc: wrapDoc, collection: n => fs.collection(n) };
 
+  // ---- 실시간 방(친구 마을에서 함께 있기): Firebase 실시간 데이터베이스 ----
+  // 게임이 쓰는 room 창구(join → presence/onPeers/leave)를 그대로 흉내 냅니다.
+  function makeRoomShim(rtdb, uid, TS) {
+    let off = 0;
+    try { rtdb.ref('.info/serverTimeOffset').on('value', s => { off = s.val() || 0; }); } catch (e) {}
+    return {
+      join: async name => {
+        const key = uid + '_' + Math.random().toString(36).slice(2, 8);
+        const base = rtdb.ref('rooms/' + name), me = base.child(key);
+        let mine = {}, timer = null, last = 0, dead = false, hs = [], peers = [];
+        const flush = () => { timer = null; if (dead) return; last = Date.now(); me.set({ by: uid, p: mine, t: TS }).catch(() => {}); };
+        try { me.onDisconnect().remove(); } catch (e) {}
+        const hb = setInterval(() => { if (!dead) me.child('t').set(TS).catch(() => {}); }, 20000);
+        const onVal = snap => {
+          const v = snap.val() || {}, now = Date.now() + off;
+          peers = Object.entries(v).filter(([k, e]) => e && e.by && (!e.t || now - e.t < 70000))
+            .map(([k, e]) => Object.freeze({ peer: k, by: String(e.by), isMe: e.by === uid, sameTab: k === key, kind: 'viewer', guest: false, presence: e.p || {}, updatedAt: Date.now() }));
+          hs.forEach(h => { try { h({ peers, joined: [], left: [], updated: [] }); } catch (e) {} });
+        };
+        base.on('value', onVal, () => {});
+        return {
+          name,
+          presence: async patch => {
+            for (const k in patch) { if (patch[k] === null || patch[k] === undefined) delete mine[k]; else mine[k] = patch[k]; }
+            if (!timer) timer = setTimeout(flush, Math.max(0, 150 - (Date.now() - last)));
+          },
+          peers: () => peers,
+          onPeers: h => { hs.push(h); setTimeout(() => h({ peers, joined: peers, left: [], updated: [] }), 0); return () => { hs = hs.filter(x => x !== h); }; },
+          emit: async () => {}, on: () => () => {}, connected: () => true, onConnection: () => () => {},
+          leave: async () => { if (dead) return; dead = true; clearInterval(hb); clearTimeout(timer); base.off('value', onVal); try { me.onDisconnect().cancel(); } catch (e) {} await me.remove().catch(() => {}); }
+        };
+      }
+    };
+  }
+  let rtdb = null; const ROOMS = {};
+  try { if (firebase.database) rtdb = firebase.database(); } catch (e) {}
+
   window.SCFB = {
+    ver: 'v10',
     auth, fs, ready,
     isGoogle: () => !!(auth.currentUser && !auth.currentUser.isAnonymous),
     who() {
@@ -87,6 +127,7 @@
       const u = await ready; if (!u) return null;
       if (name === 'db') return db;
       if (name === 'user') return { id: async () => u.uid };
+      if (name === 'room') return rtdb ? (ROOMS[u.uid] = ROOMS[u.uid] || makeRoomShim(rtdb, u.uid, firebase.database.ServerValue.TIMESTAMP)) : null;
       return null;
     }
   };

@@ -15,6 +15,7 @@
 <script src="firebase-app-compat.js"></script>
 <script src="firebase-auth-compat.js"></script>
 <script src="firebase-firestore-compat.js"></script>
+<script src="firebase-database-compat.js"></script>
 <script src="sanchon-cloud.js"></script>
 </head><body>
 <title>산촌일기</title>
@@ -1069,6 +1070,7 @@ function svApply(o){if(!o||!o.created||!o.up)throw 0;localStorage.setItem(KEY,JS
 let SVP=null,SVRL=false;
 function svAsk(o){if(!o||!o.created||!o.up){toast('저장 내용이 올바르지 않아요.');return}SVP=o;modal(`<h2>이 저장을 불러올까요?</h2><div class="card" style="background:var(--paper2)"><b style="font-family:var(--display);font-weight:400;font-size:18px">${esc(o.name||'산주')}의 숲</b><p style="margin:4px 0 0">${o.day||1}일째 · 가진 돈 ${won(o.money||0)}원</p></div><p style="color:var(--persimmon-d)">지금 이 기기의 진행 상황은 덮어써져요.</p><div class="tbtns"><button class="btn moss" data-svyes>불러오기</button><button class="btn ghost" ${SVRL?'data-svno':'data-savemv'}>${SVRL?'지금 마을 그대로 이 계정에 저장':'돌아가기'}</button></div>`)}
 function saveMove(d,e){
+  if(d.swupd!==undefined){(async()=>{try{save();cloudSave&&cloudSave(1)}catch(e){}try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}catch(e){}try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}toast('새 버전을 받아 올게요…');setTimeout(()=>location.reload(),900)})();return true}
   if(d.svback!==undefined){if(!S.created)createChar();else closeModal();return true}
   if(d.svno!==undefined){if(SVRL){delete S.fcode;save()}location.reload();return true}
   if(d.gglink!==undefined){const b=e.target.closest('button');if(b)b.disabled=true;
@@ -1263,6 +1265,7 @@ settings(){const fb=window.SCFB,cl=!fb&&!!DB;
   <h3>계정</h3>
   <div class="card" style="display:grid;gap:8px">${fb?`<p style="margin:0;font-size:13px">${fb.status()}</p><p style="margin:0;font-size:14px;line-height:1.55">${fb.who()}</p>${fb.isGoogle()?'<button class="btn ghost" data-gglink>다른 구글 계정으로 바꾸기</button><small style="color:var(--ink2);font-size:12px;line-height:1.5">바꾼 계정에 저장된 마을이 있으면 불러올지 물어봐요. 지금 마을은 원래 계정에 그대로 남아 있어요.</small>':'<button class="btn" data-gglink>구글로 로그인</button>'}`
     :`<p class="empty" style="margin:0">${cl?'Claude 계정으로 자동 저장되고 있어요. 다른 기기에서도 같은 Claude 계정으로 열면 이어서 할 수 있어요.':'지금은 이 기기에만 저장되고 있어요.'}</p>`}</div>
+  ${fb?`<h3>앱 버전</h3><div class="card" style="display:flex;gap:10px;align-items:center"><div style="flex:1;min-width:0;font-size:14px">지금 버전 <b>${esc(fb.ver||'')}</b><br><small style="color:var(--ink2)">새 기능이 안 보이면 눌러 주세요. 진행 상황은 그대로예요.</small></div><button class="btn ghost" data-swupd>새 버전 받기</button></div>`:''}
   <h3>저장 옮기기</h3>
   <div class="card" style="display:grid;gap:8px"><p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink2)">다른 휴대폰이나 앱 버전으로 지금까지 키운 마을을 옮길 때 써요. 저장 코드를 복사해서 새 기기에 붙여 넣으면 돼요.</p><button class="btn" data-savemv>💾 저장 옮기기</button></div>
   </div>`},
