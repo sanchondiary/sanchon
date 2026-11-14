@@ -1,0 +1,17 @@
+{
+  "name": "산촌일기",
+  "short_name": "산촌일기",
+  "description": "숲을 가꾸고 산촌 마을을 일구는 산림경영 게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1b3127",
+  "theme_color": "#1b3127",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
