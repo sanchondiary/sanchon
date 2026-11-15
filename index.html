@@ -1051,7 +1051,7 @@ const gateOn=()=>bn('gate')>0&&BUILDS.filter(b=>b.req).every(b=>b.req.every(r=>b
 const SEA_VIS=[1,1.3,1.2,.6];
 function rainF(){return S&&S.wx==='폭우'?.3:S&&S.wx==='비'?.6:1}
 const visitors=()=>Math.round(evtVisMul()*rainF()*satMult()*(BUILDS.reduce((t,b)=>t+(b.id==='gate'?0:bn(b.id)*b.vis),0)+(gateOn()?12:0)+facVis()+Math.floor((S.deco||[]).length/3))*SEA_VIS[sea()]);
-const visitIncome=()=>Math.round(satMult()*(BUILDS.reduce((t,b)=>t+(b.id==='gate'?(gateOn()?b.inc:0):bn(b.id)*b.inc),0)*(.6+.4*(S.recSafe==null?70:S.recSafe)/100)+300*(S.deco||[]).length)*SEA_VIS[sea()]/100)*100;
+const visitIncome=()=>Math.round(satMult()*(BUILDS.reduce((t,b)=>t+(b.id==='gate'?(gateOn()?b.inc:0):bn(b.id)*b.inc),0)*.9+300*(S.deco||[]).length)*SEA_VIS[sea()]/100)*100;
 const fireBan=()=>lvl(riskFire())[1]==='hi';
 const banHtml=()=>`<div class="ban"><b>오늘은 장작 판매 금지</b>${riskFire(S.wx)>=riskFire(S.fc)?S.wx:S.fc+' 예보'} 때문에 산불 위험이 높아요. 그래도 장작을 팔면 손님이 야외에서 불을 피우다 산불이 날 위험이 올라가요.${S.badWood?` <b style="display:inline">오늘 몰래 판 장작 ${S.badWood}묶음 · 산불 위험 +${S.badWood*6}%p</b>`:''}</div>`;
 const isBanned=pid=>pid==='firewood'&&fireBan();
@@ -1228,8 +1228,7 @@ build(){const tier=recTier(),cnt=recBuilt(),fc=facCount(),nx=tier<4?tierNeed(tie
     <div class="row"><span>하루 이용료 수입</span><b>${won(visitIncome())}원</b></div><div class="row"><span>하루 탐방객</span><b>${visitors()}명${families()?` <small style="font-size:12px;color:var(--ink2)">가족 ${families()}명 포함</small>`:''}</b></div></div>
   ${cnt&&!S.visiting?'<button class="btn ghost" data-bplmove style="width:100%;margin-top:10px">지어 둔 시설 옮기기</button>':''}
   ${staffHtml()}
-  ${builtCount()?`<h3>안전관리</h3><div class="card kv"><div class="row"><span>휴양림 안전도</span><b>${S.recSafe==null?70:S.recSafe}</b></div><div class="bar"><i style="width:${S.recSafe==null?70:S.recSafe}%;background:linear-gradient(90deg,#b8372b,#c98a12 40%,#4f8a3a 75%)"></i></div><p class="empty" style="font-size:12.5px">안전도는 매일 조금씩 떨어지고, 낮을수록 이용료가 줄고 안전사고가 나기 쉬워요. 봄·여름엔 더 빨리 떨어져요.</p></div>
-  <div class="card up"><div><div class="nm">${HZT[sea()]}</div><div class="ds">${['겨울을 지나 이용객이 늘기 전, 얼고 녹으며 상한 데크·난간·안내판을 점검해요.','계곡 물놀이 안전을 지키고 말벌집·뱀을 찾아 조치해요.','말벌·뱀·진드기가 많은 철이에요. 위험 요소를 찾아 알리고 조치해요.','결빙된 계단과 눈 쌓인 가지를 찾아 처리해요.'][sea()]} 하루 한 번.</div></div><button class="go" data-go="rsafe" ${S.sta>=10&&S.safeDay!==S.day?'':'disabled'}>${S.safeDay===S.day?'오늘 완료':'점검'}<small>체력 10</small></button></div>`:''}
+  
   ${bn('camp')?`<h3>캠핑장 매점</h3>${fireBan()?banHtml():''}${S.camp.length?S.camp.map((k,i)=>{const r=RI[k.pid],h=prod(k.pid),ban=isBanned(k.pid);return `<div class="card rec"><div class="pic">${recIcon(r)}</div><div style="min-width:0"><div class="nm">${k.n}</div><div class="ings"><span class="${h>=k.qty?'ok':'no'}">${r.n} ${h}/${k.qty}</span></div><div class="price">${k.pid==='firewood'?'화로대에 피울 장작을 찾아요':'텐트 펠릿 난로용이에요'} · ${won(k.off)}원</div></div><div class="side"><button class="btn" data-camp="${i}" ${!k.done&&h>=k.qty?'':'disabled'}>${k.done?'판매 완료':ban?'금지 중 · 팔기':'팔기'}</button></div></div>`}).join(''):'<p class="sub">오늘 묵는 캠핑 손님이 없어요.</p>'}`:''}
   ${[1,2,3,4].map(t=>{const list=BUILDS.filter(b=>b.tier===t);if(!list.length)return '';const lock=t>tier;
     return `<h3>${t===1?'기본 시설':t===2?'2단계 · 가족 시설':t===3?'3단계 · 산림레포츠':'4단계 · 산림치유'}${lock?` <small style="font-family:var(--body);font-size:12px;color:#cfc6b0">시설 ${tierNeed(t)}채부터 열려요</small>`:''}</h3>`+list.map(b=>{const n=bn(b.id),mx=bmax(b),reqOk=!b.req||b.req.every(r=>bn(r)>0);const can=!lock&&n<mx&&reqOk&&canPay(b.need)&&S.money>=b.cost;
@@ -2071,9 +2070,6 @@ function endDay(){tutHit('sleep');
     for(const k in st.needs)if(CARE[k]&&st.needs[k]&&!CARE[k].ok(st.age))st.needs[k]=false;
     if(st.pest){if((S.prev.inject||0)<S.day){st.pest=Math.min(12,st.pest+1);L.push(`${tag}재선충병이 번져 감염목이 ${st.pest}그루가 됐어요.`)}st.q-=2*Math.min(4,st.pest)}
     st.q=clamp(st.q,0,100);if(st.age===hA(st))L.push(tag+'조림지가 벌기령에 이르렀어요. 벌채할 수 있어요.')}
-  if(builtCount()){S.recSafe=Math.max(0,(S.recSafe==null?70:S.recSafe)-(s0<=1?6:4));const pI=(100-S.recSafe)/380*(s0===1?1.3:1);
-    if(Math.random()<pI){const cost=10000+builtCount()*1500;S.money=Math.max(0,S.money-cost);S.recSafe=Math.max(0,S.recSafe-8);L.push(`<b>휴양림 안전사고!</b> ${['겨울을 지나 헐거워진 데크 난간이 부서져 탐방객이 넘어졌어요.','계곡 깊은 곳에서 물놀이하던 탐방객이 급류에 휩쓸릴 뻔했어요.','탐방로 옆 말벌집을 건드린 탐방객이 벌에 쏘였어요.','얼어붙은 계단에서 탐방객이 미끄러져 다쳤어요.'][s0]} 치료비·위로금 ${won(cost)}원이 들었어요. 휴양림 터에서 안전관리를 해 주세요.`)}
-    else if(S.recSafe<40)L.push('휴양림 안전도가 낮아요. 이용료가 줄고 사고가 날 수 있어요. 안전 점검을 해 주세요.')}
   S.wx=S.fc;S.soil=soilAfter(S.wx);S.fc=nextWx();
   if(sea()!==s0){L.unshift(`<b>${SEASONS[sea()]}이 왔어요!</b> ${SEASON_MSG[sea()]}`);
     if(sea()===0&&climL())L.splice(1,0,`<b>${year()}년차 봄</b> · 기후변화로 기온이 평년보다 +${tempUp()}℃ 높아요. 봄꽃이 일찍 피고, 가뭄·폭우·병해충이 잦아져요.`);
@@ -2172,7 +2168,7 @@ const STAFF={
 function hired(){return Object.keys(STAFF).filter(k=>S.staff&&S.staff[k])}
 function recSat(){return S.recSat==null?60:S.recSat}
 function satMult(){return .75+.5*recSat()/100}
-function satParts(){const P=[['기본',40],['안전도',Math.round(((S.recSafe==null?70:S.recSafe)-60)*.35)],['휴양림 등급',recTier()*4],['조경수',Math.min(8,Math.floor((S.deco||[]).length/2))]];
+function satParts(){const P=[['기본',40],['휴양림 등급',recTier()*4],['조경수',Math.min(8,Math.floor((S.deco||[]).length/2))]];
   hired().forEach(k=>P.push([STAFF[k].n,STAFF[k].sat]));if(S.wx==='비'||S.wx==='폭우')P.push(['궂은 날씨',S.wx==='폭우'?-10:-4]);return P}
 function satTarget(){return clamp(satParts().reduce((t,p)=>t+p[1],0),0,100)}
 function progOn(k){return !(S.wx==='폭우'&&k!=='heal')}
@@ -2188,7 +2184,7 @@ function staffHtml(){if(!builtCount())return '';const sat=recSat(),tg=satTarget(
   return `<h3>고객만족도</h3><div class="card kv"><div class="row"><span>휴양림 고객만족도</span><b>${sat} <small style="font-size:12px;color:var(--ink2)">→ 내일 ${Math.round(sat*.5+tg*.5)}</small></b></div>
   <div class="bar"><i style="width:${sat}%;background:linear-gradient(90deg,#b8372b,#e4a640 45%,#4f8a3a 80%)"></i></div>
   <div class="satp">${satParts().map(([n,v])=>`<span class="${v<0?'neg':''}">${n} ${v>=0?'+':''}${v}</span>`).join('')}</div>
-  <p class="empty" style="font-size:12.5px">만족도가 높으면 탐방객과 이용료가 늘어요(지금 ×${satMult().toFixed(2)}). 전문가를 고용하고 안전관리를 잘하면 올라가요.</p></div>
+  <p class="empty" style="font-size:12.5px">만족도가 높으면 탐방객과 이용료가 늘어요(지금 ×${satMult().toFixed(2)}). 전문가를 고용하고 시설을 잘 꾸미면 올라가요.</p></div>
   <h3>산림복지 전문가</h3><p class="sub" style="margin-top:-4px">매일 인건비가 나가지만, 고객만족도가 오르고 프로그램 체험료 수입이 생겨요.</p>
   ${Object.entries(STAFF).map(([k,s])=>{const on=S.staff&&S.staff[k],ok=s.req(),n=ok?progN(k):0,g=Math.round(n*s.fee*(.8+.4*sat/100)/100)*100;
     return `<div class="card up staff ${on?'on':''}"><div style="min-width:0;display:flex;gap:10px;align-items:center"><div class="spic">${charSvg({shirt:s.shirt,hat:'bucket',hatC:s.hatC,hair:'#3a2a22'})}</div><div style="min-width:0"><div class="nm">${s.n} <small class="tag">${s.role}</small>${on?' <small class="tag on">근무 중</small>':''}</div><div class="ds">${s.ds}</div>

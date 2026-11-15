@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        ".read": "auth != null",
+        "$entry": {
+          ".write": "auth != null && $entry.beginsWith(auth.uid + '_')",
+          ".validate": "!newData.exists() || newData.child('by').val() === auth.uid"
+        }
+      }
+    }
+  }
+}
