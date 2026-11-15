@@ -239,6 +239,7 @@ nav .dot:after{content:"";position:absolute;top:-1px;right:-6px;width:7px;height
 @keyframes fl{to{translate:0 -46px;opacity:0}}
 .msg{pointer-events:none;position:absolute;left:12px;right:12px;bottom:14px;background:#14251de8;color:var(--paper);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;z-index:85;transition:opacity .3s}
 .msg.bad{background:#5a1d17ee}
+.hpmsg .msg{bottom:var(--hpb,14px)}
 
 .sc-pyogo{background:radial-gradient(120% 60% at 30% 0%,#ffffff88,transparent 60%),linear-gradient(#efe6d4,#d6c4a0)}
 .log{position:absolute;left:5%;right:5%;height:10%;border-radius:10px 40px 40px 10px;background:repeating-linear-gradient(90deg,#5a3f28 0 7px,#4a3220 7px 11px,#644530 11px 20px);box-shadow:inset 0 -8px 10px #0005,0 6px 10px #0006}
@@ -1946,7 +1947,7 @@ let pubT=null,pubLast=0;
 function publishVillage(now){if(!DB||!UID||S.visiting||!S.created||!S.me)return;if(now){clearTimeout(pubT);pubT=null;pubDo();return}if(pubT)return;pubT=setTimeout(()=>{pubT=null;pubDo()},Math.max(3000,45000-(Date.now()-pubLast)))}
 function pubDo(){if(!DB||!UID||S.visiting||!S.created||!S.me)return;pubLast=Date.now();{
   const snap={name:S.me.name,me:S.me,vname:S.vname,seed:S.seed,day:S.day,earned:Math.round(S.earned),builds:S.builds,land:S.land,
-    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now(),rmTree:(S.rmTree||[]).slice(-400)};
+    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now(),rmTree:(S.rmTree||[]).slice(-400),wx:S.wx,fc:S.fc};
   DB.doc('villages/'+UID).set(snap).catch(()=>{pubLast=0})}}
 function flushCloud(){try{if(csDirty)cloudSave(1);if(pubT)publishVillage(1)}catch(e){}}
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushCloud()});addEventListener('pagehide',flushCloud);
@@ -2031,7 +2032,7 @@ function visit(id){const v=NB[id];if(!v||!S.created)return;if(!isFriend(id)){toa
   if(st.length)V.stands=st;V.prev={tower:!!v.tower,sabang:!!v.sabang};V.rack=Array.isArray(v.rack)?v.rack.slice(0,6).map(r=>r&&typeof r==='object'?{d:clamp(Number(r.d)||0,0,3)}:null):[null,null];
   V.bpos={};if(v.bpos&&typeof v.bpos==='object')for(const b of BUILDS){const a=v.bpos[b.id];if(Array.isArray(a))V.bpos[b.id]=a.slice(0,b.max).map(p=>Array.isArray(p)?[clamp(Number(p[0])||0,40,WW-40),clamp(Number(p[1])||0,80,WH-20)]:null)}
   V.room=cleanRoom(v.room);V.deco=cleanDeco(v.deco);V.beds=cleanBeds(v.beds);V.furn={};V.sapl={};placing=null;homeSel=null;
-  V.orders=[];V.arrivals=0;V.heat=[];V.camp=[];V.wx=ME.wx;V.fc=ME.fc;V.sta=ME.sta;V.money=ME.money;V.inv=ME.inv;V.seenWorld=true;
+  V.orders=[];V.arrivals=0;V.heat=[];V.camp=[];{const okW=w=>typeof w==='string'&&WXI[w]&&(w!=='눈'||sea(V.day)===3)&&(w!=='폭염'||sea(V.day)===1);V.wx=okW(v.wx)?v.wx:okW(ME.wx)?ME.wx:'맑음';V.fc=okW(v.fc)?v.fc:V.wx}V.sta=ME.sta;V.money=ME.money;V.inv=ME.inv;V.seenWorld=true;
   bindStand(V);S=V;P.x=870;P.y=815;tab='forest';closeModal();render();toast(`${V.vname}에 버스를 타고 놀러 왔어요!`)}
 function goHome(){if(!ME)return;stopWorld();S=ME;ME=null;P.x=870;P.y=815;tab='forest';closeModal();render();toast('우리 마을로 돌아왔어요.')}
 async function writeNote(patch){if(!DB||!UID||!S.visiting)return false;try{const ref=DB.doc('notes/'+UID);const cur=await ref.get();const body=cur.exists?cur.data()||{}:{};const msgs={...(body.msgs||{})};
@@ -3133,6 +3134,7 @@ inv:{name:'생태계교란 식물 제거',cat:1,sc:'care',cost:10,time:16,how:'�
 healp:{name:'산림복지 프로그램 운영',cat:1,sc:'heal',cost:10,time:28,noAv:true,how:'맨 앞 방문객의 고민에 맞는 프로그램 버튼을 눌러요. 너무 오래 기다리면 돌아가요.',
  init(api){const st=S.stand,built=progBuilt(st);let ok=0,no=0,left=0,t=.2,earned=0;const Q=[];const h=healScore(st);
   api.A.innerHTML=`<div class="hq" id="hq"></div><div class="hp">${built.map(k=>`<button data-hp="${k}"><span class="hpi">${PICS[k]||PICS.trail}</span>${PROG[k]}</button>`).join('')}<button data-hp="none" class="hno">다음에 오세요</button>${built.length<6?'<p class="hmore">휴양림 건물이나 이 숲의 시설을 더 지으면 프로그램이 늘어요.</p>':''}</div>`;
+  {const hp=api.A.querySelector('.hp'),fit=()=>{if(hp.isConnected)api.A.style.setProperty('--hpb',(hp.offsetHeight+16)+'px')};api.A.classList.add('hpmsg');fit();requestAnimationFrame(fit);setTimeout(fit,300)}
   const hq=api.A.querySelector('#hq');const upd=()=>{api.stat(`만족 ${ok} · 불만 ${no+left}`);hq.innerHTML=Q.map((v,i)=>`<div class="hv ${i?'':'first'}">${charSvg(v.me)}<div><b>${v.need.t}</b><i style="width:${Math.max(0,v.p/v.max*100)}%"></i></div></div>`).join('')||'<p class="hwait">방문객을 기다리는 중…</p>'};
   function spawn(){const avail=NEEDS.filter(n=>n.ok.some(k=>built.includes(k)));const need=Math.random()<.85&&avail.length?pick(avail):pick(NEEDS);Q.push({need,p:9,max:9,me:{shirt:pick(SHIRTS),hat:pick(['straw','cap','scarf']),hair:pick(HAIRS)}});upd()}
   api.A.querySelectorAll('[data-hp]').forEach(b=>api.tap(b,()=>{const v=Q[0];if(!v)return;const k=b.dataset.hp,fits=v.need.ok.some(x=>built.includes(x));
