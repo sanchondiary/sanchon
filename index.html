@@ -685,7 +685,7 @@ function prodLine(c,pid){const cat=PCAT[pid],L=CQ[c.n]&&CQ[c.n][cat];if(L)return
 const SHORT=['김 여사','셰프','대학생','등산객','바이어','카페 사장','할머니 손님','유통상','시공사','화장품 공방','피서객'];
 const SEASONS=['봄','여름','가을','겨울'];
 const SEA={hwagoset:[2,3],gunbam:[2,3],gotgamssam:[2,3],gotgamset:[3],bibim:[0,1],durupsukhoe:[0],chwissam:[0,1],myeongijang:[0,1,2],songgui:[2],samset:[1,2,3],firewood:[2,3],pellet:[2,3],ddalgicheong:[1],deodeokgui:[2,3],dorajimuchim:[2,3],champasta:[1,2],chammuchim:[1],cicajuice:[1,2],omijacheong:[2,3],omijatea:[2,3],omijaade:[1,2],neungijeongol:[2],gorosoebottle:[3,0]};
-const GSEA={pyogo:[0,1,2],jat:[2],bam:[2],gam:[2]};
+const GSEA={pyogo:[0,1,2],jat:[2],bam:[2],gam:[2],fcomp:[0,2]};
 const NAMUL_T=['봄나물 캐기','산딸기·병풀·참나물','더덕·도라지·오미자','고로쇠 수액 받기'];
 const NAMUL_DS=['봄나물을 캐요. 닮은 독초를 조심하세요.','산딸기를 따고 병풀·참나물을 뜯어요. 운 좋으면 산양삼을 만나요. 말벌집을 조심하세요.','더덕·도라지를 캐고 오미자를 따요. 운 좋으면 송이를 만나요. 독버섯은 절대 금지!','고로쇠나무에 꽂아 둔 통에 수액을 받아요.'];
 const SEASON_MSG=['산나물이 올라오고 표고가 돋아요. 봄철 산불조심기간이라 건조하고 바람 부는 날을 특히 조심하세요.','산딸기와 더덕 철이에요. 장마와 태풍으로 산사태가, 매개충 활동으로 병해충이 잦아져요. 풀베기 적기예요.','잣·밤·감·송이를 거두는 수확철이에요. 가을 산불과 독버섯을 조심하세요.','산이 쉬는 계절이에요. 가지치기·솎아베기·벌채 적기이고 고로쇠 수액을 받아요. 마을 땔감 주문이 늘어요.'];
@@ -807,17 +807,23 @@ function vil(){if(!S.vil||typeof S.vil!=='object')S.vil={tr:0,reqs:[],rd:0,homes
   return v}
 function vTier(){const t=vil().tr;let k=0;VTIER.forEach((x,i)=>{if(t>=x[0])k=i});return k}
 function vTrust(n){const v=vil(),k0=vTier();v.tr=clamp(v.tr+n,0,100);const k1=vTier();if(k1>k0)setTimeout(()=>toast(`마을 인심이 올랐어요! 이제 ‘${VTIER[k1][1]}’ 단계예요.`),900)}
-function festBooth(){const fo=festOf();if(!fo||S.visiting)return '';const v=vil();if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};
-  const sold=v.fs.n||0,left=Math.max(0,FCAP-sold),tl=Math.max(0,FTASTE-(v.fs.t||0)),list=fo.ids.filter(id=>have(id)>0),ex=FEXP[sea()],boost=S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0;
-  return `<h3>🎉 오늘은 ${fo.n}!</h3><div class="card vfest" style="display:grid;gap:8px"><p style="margin:0;font-size:13px;color:var(--ink2);line-height:1.55">“${fo.ban}” 장터 마당에 축제가 열려 구경 온 손님이 많아요. 제철 물건을 넉넉히 팔 수 있고(오늘 ${left}개 더), 시식으로 나누면 인심이 오르고 단골이 늘어요(시식 ${tl}개 더).</p>
-    ${list.length?list.map(id=>{const n=have(id),ic=ITEM[id]?ITEM[id].ic():recIcon(RI[id]),mx=Math.max(0,Math.min(n,Math.max(left,tl))),q=clamp(FSQ[id]||1,mx?1:0,Math.max(mx,1));FSQ[id]=q;return `<div class="sell" style="grid-template-columns:36px 1fr;row-gap:6px">${ic}<div class="nm">${nameOf(id)}<small>${n}개 · 개당 ${won(festPrice(id))}원</small></div>
-      <div style="grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:6px;flex-wrap:wrap"><div class="qty"><button data-vfq="${id}:-1" aria-label="하나 빼기" ${q>1?'':'disabled'}>−</button><b id="fsq_${id}">${q}</b><button data-vfq="${id}:1" aria-label="하나 더하기" ${q<mx?'':'disabled'}>＋</button><button class="qmax" data-vfq="${id}:max" ${mx>1?'':'disabled'}>최대</button></div>
-      <button class="btn ghost" id="fst_${id}" data-vft="${id}:${q}" ${tl>=q&&q>0?'':'disabled'}>${q}개 시식</button><button class="btn" id="fsb_${id}" data-vfs="${id}:${q}" ${left>=q&&q>0?'':'disabled'}>${q}개 팔기 · ${won(festPrice(id)*q)}원</button></div></div>`}).join(''):`<p class="empty">축제에 낼 ${sea()===0?'산나물이나 나물 요리':'밤·곶감이나 가공품'}이 없어요.</p>`}
-    ${boost?`<p style="margin:0;font-size:12.5px;color:var(--good)">시식 덕분에 ${S.festBoost.until-S.day+1}일 동안 장터 손님이 하루 ${boost}명 더 와요.</p>`:''}
-    ${ex?`<div class="want"><div class="w" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-family:var(--display);font-weight:400">🧺 ${ex.n}</b><small style="color:var(--ink2);line-height:1.45">${ex.ds} 체험비 ${won(fexpPay())}원 · 인심 +2</small></div><button class="btn" data-vfx ${v.fs.x||S.sta<8?'disabled':''}>${v.fs.x?'오늘 끝':'열기'}<small style="display:block;font-size:11px;opacity:.85">체력 8</small></button></div>`:''}</div>`}
-function festDay(d){const dd=d||S.day,s=sea(dd);return (s===0||s===2)&&((dd-1)%7+1)===5}
+const FAW=[['금상','🥇',50000,6],['은상','🥈',30000,4],['동상','🥉',15000,3],['장려상','🎗️',5000,2]];
+const FCMP={0:{n:'독초 가려내기 대회',ds:'산나물 사이에 섞인 동의나물·박새만 골라내요. 빨리, 정확하게!'},2:{n:'알밤 줍기 대회',ds:'떨어진 알밤을 주워요. 가시 밤송이는 건드리지 마세요!'}};
+function fsOf(){const v=vil();if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day};return v.fs}
+function judgeBase(id){const p=ITEM[id]?ITEM[id].p:RI[id].p;return (p>=12000?45:p>=6000?38:p>=3000?30:p>=1200?22:15)+(RI[id]?8:0)}
+function festBooth(){const fo=festOf();if(!fo||S.visiting)return '';const fs=fsOf(),cp=FCMP[sea()];
+  const list=fo.ids.filter(id=>have(id)>0).sort((a,b)=>judgeBase(b)-judgeBase(a)),want=fo.ids.filter(id=>RI[id]&&inSea(id)).map(nameOf);
+  const aw=(S.awards||[]).slice(-6);
+  const show=fs.c?(()=>{const A=FAW[fs.c.r];return `<div class="want"><div class="w" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-family:var(--display);font-weight:400">${A[1]} ${A[0]} · ${nameOf(fs.c.id)}</b><small style="color:var(--ink2);line-height:1.45">${fs.c.say} 상금 ${won(A[2])}원 · 인심 +${A[3]}</small></div></div>`})()
+    :list.length?list.slice(0,6).map(id=>{const st=Math.max(1,Math.min(5,Math.round(judgeBase(id)/11)));return `<div class="want"><div class="w">${ITEM[id]?ITEM[id].ic():recIcon(RI[id])}<span>${nameOf(id)}<small style="display:block;color:var(--ink2)">${'★'.repeat(st)}${'☆'.repeat(5-st)} · ${have(id)}개</small></span></div><button class="btn" data-vfc="${id}">출품</button></div>`}).join('')
+    :`<p class="empty">출품할 ${sea()===0?'산나물이나 나물 요리':'밤·곶감이나 가공품'}이 없어요.</p>`;
+  return `<h3>🎉 오늘은 ${fo.n}!</h3><div class="card vfest" style="display:grid;gap:10px"><p style="margin:0;font-size:13px;color:var(--ink2);line-height:1.55">“${fo.ban}” 오늘은 ${want.slice(0,4).join('·')} 같은 축제 음식을 찾는 손님이 많아요.</p>
+    <div><b style="font-family:var(--display);font-weight:400;font-size:16px">🏅 품평회</b><p style="margin:2px 0 6px;font-size:12.5px;color:var(--ink2)">자신 있는 물건 하나를 내요. 공들인 가공품일수록 점수가 높아요. 한 번만 낼 수 있어요.</p>${show}</div>
+    ${cp?`<div class="want"><div class="w" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-family:var(--display);font-weight:400">🏁 ${cp.n}</b><small style="color:var(--ink2);line-height:1.45">${fs.g?`${FAW[fs.g.r][1]} ${FAW[fs.g.r][0]} · ${fs.g.n}점`:cp.ds}</small></div><button class="btn" data-go="fcomp" ${fs.g||S.sta<8?'disabled':''}>${fs.g?'오늘 끝':'참가'}<small style="display:block;font-size:11px;opacity:.85">체력 8</small></button></div>`:''}
+    ${aw.length?`<p style="margin:0;font-size:12.5px;color:var(--ink2)">역대 수상 · ${aw.map(a=>`${FAW[a.r][1]} ${a.y}년 ${a.k} ${FAW[a.r][0]}`).join(', ')}</p>`:''}</div>`}
+function festDay(d){return false}
 function festOf(d){return festDay(d)?FEST[sea(d)]:null}
-function festPrice(id){return ITEM[id]?ITEM[id].p:RI[id].p}
+function festPrice(id){const p=ITEM[id]?ITEM[id].p:RI[id].p,b=SEA[id]&&inSea(id)?1.04:1;return Math.round(p*1.1*b/100)*100}
 function clsOk(c){const v=vil();return v.tr>=15&&(!c.sea||c.sea.includes(sea()))&&(c.hm||0)<=v.homes}
 function clsPay(){return Math.round((10000+visitors()*500)*.6/100)*100}
 function vIcon(need,sta){if(sta)return `<span style="color:#8a5a32">${SP.icon.tool}</span>`;const k=Object.keys(need)[0];return ITEM[k]?ITEM[k].ic():recIcon(RI[k])}
@@ -827,8 +833,7 @@ function villageLife(){const v=vil(),k=vTier(),nx=VTIER[k+1],pc=nx?(v.tr-VTIER[k
   let h=`<div class="card vtr"><div class="row" style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-family:var(--display);font-weight:400;font-size:17px">마을 인심 · ${VTIER[k][1]}</b><span style="color:var(--ink2);font-size:13px">${v.tr} / 100</span></div>
   <div class="bar" style="margin:6px 0"><i style="width:${pc}%;background:linear-gradient(90deg,#c8432b,#e8a040)"></i></div>
   <p style="margin:0;font-size:12.5px;color:var(--ink2)">주민 부탁을 들어주고 마을 일에 함께하면 인심이 쌓여요. ${v.tr<15?'인심 15가 되면 주민 강사 체험을 열 수 있어요.':nextH?`인심 ${nextH.tr}이 되면 ${nextH.n}${nextH.j} 이사 올 수 있어요.`:'귀산촌 가구가 모두 자리 잡았어요.'}</p></div>`;
-  if(fo){h+=`<div class="card" style="display:flex;gap:10px;align-items:center;border:2px solid #c8432b"><div style="flex:1;min-width:0"><b style="font-family:var(--display);font-weight:400;font-size:17px">오늘은 ${fo.n}!</b><div style="font-size:13px;color:var(--ink2);line-height:1.5">장터에서 축제가 열렸어요. 제철 물건을 팔고, 시식 코너와 체험 부스도 열어 보세요.</div></div><button class="btn" data-tab="market">장터로</button></div>`}
-  else{let d=S.day+1;while(!festDay(d)&&d<S.day+30)d++;h+=`<p class="sub" style="margin:10px 2px 0">다음 마을 축제: ${d-S.day}일 뒤 ${FEST[sea(d)].n}</p>`}
+  if(fo){h+=`<div class="card" style="display:flex;gap:10px;align-items:center;border:2px solid #c8432b"><div style="flex:1;min-width:0"><b style="font-family:var(--display);font-weight:400;font-size:17px">오늘은 ${fo.n}!</b><div style="font-size:13px;color:var(--ink2);line-height:1.5">장터에서 축제가 열렸어요. 품평회에 출품하고 축제 대회에도 나가 보세요. 축제 음식을 찾는 손님도 많아요.</div></div><button class="btn" data-tab="market">장터로</button></div>`}
   h+=`<h3>마을 회관 게시판 · 주민 부탁</h3>`+v.reqs.map((r,i)=>{const q=VREQ[r.i];if(!q)return '';const ok=q.sta?S.sta>=q.sta:canPay(q.need);
     return `<div class="card rec"><div class="pic">${vIcon(q.need,q.sta)}</div><div style="min-width:0"><div class="nm">${q.who}</div><div class="ds" style="font-size:13px">“${q.t}”</div><div class="ings">${q.sta?`<span class="${S.sta>=q.sta?'ok':'no'}">체력 ${q.sta}</span>`:needTxt(q.need)}</div><div class="price">인심 +${q.tr}${q.gift?' · '+giftTxt(q.gift):''}</div></div><div class="side"><button class="btn" data-vreq="${i}" ${!r.done&&ok?'':'disabled'}>${r.done?'완료':q.sta?'거들기':'들어주기'}</button></div></div>`}).join('');
   h+=`<h3>주민 강사 체험</h3>`;
@@ -856,6 +861,10 @@ function vilClick(d){
     if(ITEM[id])S.inv[id]-=n;else S.prod[id]-=n;const t0=v.fs.t||0;v.fs.t=t0+n;FSQ[id]=1;const tr=Math.floor(v.fs.t/2)-Math.floor(t0/2)+(first?5:0);if(tr)vTrust(tr);
     const bn=Math.min(3,Math.ceil(v.fs.t/3));S.festBoost={until:S.day+7,n:Math.max(bn,S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0)};save();
     toast(`${nameOf(id)} ${n}개를 시식으로 나눴어요. 손님들이 맛있다고 해요!${tr?` 인심 +${tr}`:''} · 앞으로 일주일 장터 손님 하루 +${S.festBoost.n}명`);renderKeep();renderTop();return true}
+  if(d.vfc){const id=d.vfc,fo=festOf(),fs=fsOf();if(!fo||!fo.ids.includes(id)||fs.c||have(id)<1)return true;
+    if(ITEM[id])S.inv[id]-=1;else S.prod[id]-=1;const sc=judgeBase(id)+Math.round(vil().tr/10)+ri(26),r=sc>=72?0:sc>=60?1:sc>=48?2:3,A=FAW[r];
+    const say=[`심사위원들이 “${RI[id]?'정성 들인 솜씨가 돋보인다':'싱싱하고 품질이 좋다'}”며 입을 모아 칭찬했어요.`,`“${RI[id]?'맛이 깔끔하고 모양도 좋다':'제철 맛이 살아 있다'}”는 평을 받았어요.`,`“기본이 탄탄하다”는 평을 받았어요.`,`“다음엔 손이 더 간 가공품도 내 보라”는 조언을 들었어요.`][r];
+    fs.c={id,r,say};S.awards=(S.awards||[]).concat({y:year(),k:SEASONS[sea()]+' 품평회',r}).slice(-20);earn(A[2]);vTrust(A[3]);save();toast(`품평회 ${A[1]} ${A[0]}! 상금 +${won(A[2])}원`);renderKeep();renderTop();return true}
   if(d.vfx!==undefined){const v=vil(),fo=festOf(),ex=FEXP[sea()];if(!fo||!ex)return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};if(v.fs.x||S.sta<8)return true;
     const first=!v.fs.n&&!v.fs.t;S.sta-=8;v.fs.x=1;const p=fexpPay();earn(p);vTrust(2+(first?5:0));save();toast(`${ex.n}을 열었어요! 손님들이 즐거워해요. 체험비 +${won(p)}원 · 인심 +${2+(first?5:0)}`);renderKeep();renderTop();return true}
   if(d.vcls){const v=vil(),c=VCLS.find(x=>x.id===d.vcls);if(!c||!clsOk(c)||(v.cls&&v.cls.d===S.day)||S.sta<6||!canPay(c.need)||!visitors())return true;take(c.need);S.sta-=6;v.cls={id:c.id,d:S.day};const p=clsPay();earn(p);vTrust(3);save();toast(`${c.who} 강사와 함께 ‘${c.n}’ 시작! 손님들이 즐거워해요. +${won(p)}원 · 인심 +3`);renderKeep();renderTop();return true}
@@ -1031,6 +1040,8 @@ const needTxt=need=>Object.entries(need).map(([k,v])=>`<span class="${have(k)>=v
 
 function newCust(){
   const pool=CUST.map((c,i)=>i).filter(i=>((i!==7&&i!==8)||S.day>=3)&&(CUST[i].n!=='계곡 피서객'||sea()===1));
+  {const fo=festOf();if(fo&&Math.random()<.6){const fp=fo.ids.filter(id=>RI[id]&&inSea(id));if(fp.length){const pid=pick(fp),lk=pool.filter(i=>CUST[i].likes.includes(pid)),ci=lk.length?pick(lk):pick(pool),c=CUST[ci],r=RI[pid],qty=r.p<12000&&Math.random()<.5?2:1;
+    return {c:ci,pid,qty,q:prodLine(c,pid),off:Math.round(r.p*qty*rnd(1.08,1.12)*1.04/100)*100}}}}
   const good=pool.filter(i=>CUST[i].likes.some(p=>SEA[p]&&inSea(p)));
   const ci=Math.random()<.75&&good.length?pick(good):pick(pool),c=CUST[ci];
   const fit=c.likes.filter(p=>SEA[p]&&inSea(p)),okL=c.likes.filter(inSea);
@@ -1947,7 +1958,7 @@ let pubT=null,pubLast=0;
 function publishVillage(now){if(!DB||!UID||S.visiting||!S.created||!S.me)return;if(now){clearTimeout(pubT);pubT=null;pubDo();return}if(pubT)return;pubT=setTimeout(()=>{pubT=null;pubDo()},Math.max(3000,45000-(Date.now()-pubLast)))}
 function pubDo(){if(!DB||!UID||S.visiting||!S.created||!S.me)return;pubLast=Date.now();{
   const snap={name:S.me.name,me:S.me,vname:S.vname,seed:S.seed,day:S.day,earned:Math.round(S.earned),builds:S.builds,land:S.land,
-    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:S.bpos||{},shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now(),rmTree:(S.rmTree||[]).slice(-400),wx:S.wx,fc:S.fc};
+    stands:S.stands.map(x=>({sp:x.sp,loc:x.loc,age:x.age,q:Math.round(x.q),cut:!!x.cut,pest:x.pest||0,needs:x.needs,fn:fnOf(x),mix:x.mix||null,burnt:x.burnt||[],young:x.young||[],bio:x.bio||0,fac:x.fac||{}})),tower:!!S.prev.tower,sabang:!!S.prev.sabang,rack:S.rack,room:S.room,deco:S.deco,beds:S.beds,facts:S.facts.length,quiz:S.qz.right,code:myCode(),bpos:Object.fromEntries(Object.entries(S.bpos||{}).filter(([k,a])=>Array.isArray(a)).map(([k,a])=>[k,a.map(p=>Array.isArray(p)?{x:Math.round(p[0]),y:Math.round(p[1])}:null)])),shelf:Object.fromEntries(Object.entries(S.shelf||{}).filter(([k,q])=>RI[k]&&q>0)),shelfT:Date.now(),updated:Date.now(),rmTree:(S.rmTree||[]).slice(-400),wx:S.wx,fc:S.fc};
   DB.doc('villages/'+UID).set(snap).catch(()=>{pubLast=0})}}
 function flushCloud(){try{if(csDirty)cloudSave(1);if(pubT)publishVillage(1)}catch(e){}}
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushCloud()});addEventListener('pagehide',flushCloud);
@@ -2030,7 +2041,7 @@ function visit(id){const v=NB[id];if(!v||!S.created)return;if(!isFriend(id)){toa
   const okSp=k=>!!(SPC[k]||ECO[k]||LSP[k]),cells=a=>(Array.isArray(a)?a:[]).map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<20).slice(0,20);
   const st=Array.isArray(v.stands)?v.stands.slice(0,12).map(x=>Object.assign(freshStand(clamp(Number(x.age)||0,0,80),clamp(Number(x.q)||50,0,100)),{fn:FN[x.fn]?x.fn:'timber',mix:Array.isArray(x.mix)?x.mix.filter(okSp).slice(0,5):undefined,burnt:cells(x.burnt),young:cells(x.young),bio:clamp(Number(x.bio)||0,0,100),fac:Object.fromEntries(Object.keys(FAC).filter(k=>x.fac&&x.fac[k]===true).map(k=>[k,true])),sp:okSp(x.sp)?x.sp:'pine',loc:LOCN[x.loc]?x.loc:'home',cut:!!x.cut,pest:clamp(Number(x.pest)||0,0,12),needs:{weed:!!(x.needs&&x.needs.weed),vine:!!(x.needs&&x.needs.vine),prune:!!(x.needs&&x.needs.prune),thin:!!(x.needs&&x.needs.thin)}})):[];
   if(st.length)V.stands=st;V.prev={tower:!!v.tower,sabang:!!v.sabang};V.rack=Array.isArray(v.rack)?v.rack.slice(0,6).map(r=>r&&typeof r==='object'?{d:clamp(Number(r.d)||0,0,3)}:null):[null,null];
-  V.bpos={};if(v.bpos&&typeof v.bpos==='object')for(const b of BUILDS){const a=v.bpos[b.id];if(Array.isArray(a))V.bpos[b.id]=a.slice(0,b.max).map(p=>Array.isArray(p)?[clamp(Number(p[0])||0,40,WW-40),clamp(Number(p[1])||0,80,WH-20)]:null)}
+  V.bpos={};if(v.bpos&&typeof v.bpos==='object')for(const b of BUILDS){const a=v.bpos[b.id];if(Array.isArray(a))V.bpos[b.id]=a.slice(0,b.max).map(p=>Array.isArray(p)?[clamp(Number(p[0])||0,40,WW-40),clamp(Number(p[1])||0,80,WH-20)]:p&&typeof p==='object'?[clamp(Number(p.x)||0,40,WW-40),clamp(Number(p.y)||0,80,WH-20)]:null)}
   V.room=cleanRoom(v.room);V.deco=cleanDeco(v.deco);V.beds=cleanBeds(v.beds);V.furn={};V.sapl={};placing=null;homeSel=null;
   V.orders=[];V.arrivals=0;V.heat=[];V.camp=[];{const okW=w=>typeof w==='string'&&WXI[w]&&(w!=='눈'||sea(V.day)===3)&&(w!=='폭염'||sea(V.day)===1);V.wx=okW(v.wx)?v.wx:okW(ME.wx)?ME.wx:'맑음';V.fc=okW(v.fc)?v.fc:V.wx}V.sta=ME.sta;V.money=ME.money;V.inv=ME.inv;V.seenWorld=true;
   bindStand(V);S=V;P.x=870;P.y=815;tab='forest';closeModal();render();toast(`${V.vname}에 버스를 타고 놀러 왔어요!`)}
@@ -2087,7 +2098,7 @@ function endDay(){tutHit('sleep');
   const fire=Math.random()<pF;if(S.badWood)L.push(`금지 기간에 판 장작 ${S.badWood}묶음 때문에 어젯밤 산불 위험이 +${S.badWood*6}%p 높았어요.`);S.badWood=0;
   {const lv=level();if(lv>(S.lvSeen||1)){const nw=PARCELS.filter(x=>x.lv>(S.lvSeen||1)&&x.lv<=lv).map(x=>x.n);L.unshift(`<b>산림경영 Lv.${lv} 달성!</b>${nw.length?` 새 임지 매물: ${nw.join(', ')}.`:''}${lv===2?' 자연환경보전림을 만들 수 있어요.':lv===3?' 휴양·치유림을 만들 수 있어요.':''}`);S.lvSeen=lv}}
   S.orders=genOrders();{const vh=vil().homes;S.arrivals=Math.max(1,Math.round((2+vh+Math.floor(visitors()/3)+bn('kids')*2)*(S.wx==='폭우'?.25:S.wx==='비'?.55:1)*(festDay()?1.5:1))+(S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0));const hn=[1,0,3,3][sea()];S.heat=genHeat(hn);if(hn)for(let i=0;i<vh;i++){const pid=i===1?'firewood':'pellet',qty=1+ri(2);S.heat.push({n:VHOME[i].sh+' '+(pid==='firewood'?'화목난로':'펠릿 보일러'),pid,q:'새집 첫 겨울이라 연료가 넉넉해야 해요.',qty,off:Math.round(RI[pid].p*qty*1.1/100)*100,done:false})}
-    if(festDay())L.unshift(`<b>오늘은 마을 ${festOf().n}이에요!</b> 장터에 축제가 열려 손님이 많아요. 제철 물건을 넉넉히 팔고, 시식 코너와 ${FEXP[sea()]?FEXP[sea()].n:'체험 부스'}도 열어 보세요.`);else if(festDay(S.day+1))L.push(`내일은 마을 ${festOf(S.day+1).n}이에요. 팔 물건을 미리 준비해 두세요.`)}S.camp=genCamp();S.con=genCon();
+    if(festDay())L.unshift(`<b>오늘은 마을 ${festOf().n}이에요!</b> 장터에서 품평회와 ${FCMP[sea()]?FCMP[sea()].n:'축제 대회'}가 열리고, 축제 음식을 찾는 손님이 많아요.`);else if(festDay(S.day+1))L.push(`내일은 마을 ${festOf(S.day+1).n}이에요. 품평회에 낼 물건과 축제 음식을 미리 준비해 두세요.`)}S.camp=genCamp();S.con=genCon();
   if(S.builds.camp&&S.camp.length)L.push(`캠핑장에 손님 ${S.camp.length}팀이 묵어요.${fireBan()?' 오늘은 산불 위험이 높아 장작 판매가 금지예요.':''}`);
   const ppl=PEOPLE.map((p,i)=>i).filter(i=>PEOPLE[i].facts.some((_,j)=>!S.facts.includes(i+'-'+j)));
   if(ppl.length&&!fire){const pi=pick(ppl),p=PEOPLE[pi];const fi=p.facts.findIndex((_,j)=>!S.facts.includes(pi+'-'+j));learn(pi,fi);L.push(`<i>마을 소식 · ${p.n}: “${p.facts[fi]}”</i>`)}
@@ -2935,7 +2946,7 @@ namul:{name:'산자락 비탈',cost:20,time:26,title:()=>'산자락 · '+NAMUL_T
     `<div>${SP.omija()}<span><b>오미자</b> 송이로 달린 빨간 열매<br>도라지는 보라 별꽃·흰 뿌리</span></div><div>${SP.dokb()}<span><b>독버섯</b> 새하얀 갓과 턱받이<br>절대 캐지 마세요</span></div>`][s];
   A.appendChild(tips);
   const T=[
-    {gosari:{w:18,ic:SP.gosari},chwi:{w:16,ic:SP.chwi},myeongi:{w:14,ic:SP.myeongi},dongui:{w:15,ic:SP.dongui,bad:8,why:'동의나물은 독초예요! 곰취와 닮았지만 잎 가장자리가 매끈하고 윤기가 나며 노란 꽃이 펴요.'},baksae:{w:15,ic:SP.baksae,bad:8,why:'박새는 독초예요! 산마늘과 닮았지만 잎에 깊은 세로 주름이 있고 줄기를 따라 어긋나게 달려요.'}},
+    {gosari:{w:18,ic:SP.gosari},chwi:{w:16,ic:SP.chwi},myeongi:{w:14,ic:SP.myeongi},dongui:{w:6,ic:SP.dongui,bad:8,why:'동의나물은 독초예요! 곰취와 닮았지만 잎 가장자리가 매끈하고 윤기가 나며 노란 꽃이 펴요.'},baksae:{w:6,ic:SP.baksae,bad:8,why:'박새는 독초예요! 산마늘과 닮았지만 잎에 깊은 세로 주름이 있고 줄기를 따라 어긋나게 달려요.'}},
     {sanddalgi:{w:26,ic:SP.berry},byeongpul:{w:18,ic:SP.byeongpul},chamnamul:{w:18,ic:SP.chamnamul},hornet:{w:14,ic:SP.hornet,bad:10,why:'말벌집을 건드렸어요! 여름·가을 산에선 벌집 근처를 피하고, 쏘이면 바로 병원에 가세요.'}},
     {deodeok:{w:18,ic:SP.deodeok},doraji:{w:16,ic:SP.doraji},omija:{w:16,ic:SP.omija},neungi:{w:8,ic:SP.neungi},dokb:{w:11,ic:SP.dokb,bad:8,why:'독버섯이에요! 야생버섯은 전문가도 헷갈려요. 모르는 버섯은 절대 캐거나 먹지 마세요.'},hornet:{w:6,ic:SP.hornet,bad:10,why:'가을 말벌은 특히 사나워요. 벌집 근처에선 조용히 물러나세요.'}}][s];
   const keys=Object.keys(T),tw=keys.reduce((a,k)=>a+T[k].w,0);
@@ -3078,6 +3089,20 @@ pest:{name:'재선충병 방제 · 모두베기',cat:1,sc:'care',cost:15,time:24
     else st.pest=Math.max(1,Math.min(12,st.pest||1));
     return (all?`감염목 ${n}그루와 주변 나무까지 ${N}그루를 모두 베어 그물망을 씌워 옮겼어요. 벌기령까지 남은 기간을 따져 ${GN} 원목 ${moved*2}개를 거뒀어요. 빈 땅에는 재선충병에 걸리지 않는 활엽수나 다른 수종으로 바꿔 심어요(수종전환).`
       :`아직 ${N-moved}그루를 옮기지 못했어요. 피해 구역은 남김없이 모두 베어 옮겨야 병이 멈춰요. 다시 방제해 주세요.${moved?` 옮긴 나무에서 ${GN} 원목 ${moved*2}개를 거뒀어요.`:''}`)+'<br>그물망을 씌워 옮긴 원목은 훈증 같은 방제 처리를 거쳐 제재목·보드 같은 목재로 최대한 쓰고, 쓰기 어려운 나무는 잘게 파쇄해 매개충을 없애요. 처리하지 않은 나무를 함부로 옮기거나 땔감으로 쓰면 병이 퍼져요.'}}}},
+fcomp:{name:'축제 대회',cat:1,sc:'namul',cost:8,time:25,noAv:true,title:()=>(FCMP[sea()]||{n:'축제 대회'}).n,
+ howF:()=>sea()===0?'동의나물·박새만 눌러 골라내요. 곰취·산마늘·고사리를 누르면 감점이에요.':'알밤을 눌러 주워요. 가시 밤송이를 누르면 감점이에요.',
+ init(api){const s=sea(),fs=fsOf();let sc=0,t=0;const cols=4,rows=4,cells=[];
+  const T=s===0?[{k:'dongui',ic:SP.dongui,ok:1,w:3},{k:'baksae',ic:SP.baksae,ok:1,w:3},{k:'chwi',ic:SP.chwi,w:2},{k:'myeongi',ic:SP.myeongi,w:2},{k:'gosari',ic:SP.gosari,w:2}]
+    :[{k:'bam',ic:SP.nut,ok:1,w:6},{k:'burr',ic:SP.burr,w:4}];const tw=T.reduce((a,x)=>a+x.w,0);
+  const bad=s===0?{chwi:'곰취예요! 잎 가장자리에 톱니가 있어요.',myeongi:'산마늘이에요! 잎이 매끈하고 주름이 없어요.',gosari:'고사리예요! 독초가 아니에요.'}:{burr:'아야! 가시 밤송이는 발로 벌려서 까야 해요.'};
+  const upd=()=>api.stat(`점수 ${sc}`);upd();
+  function spawn(){const free=[];for(let i=0;i<cols*rows;i++)if(!cells[i])free.push(i);if(!free.length)return;let r=Math.random()*tw,ty=T[0];for(const x of T){r-=x.w;if(r<0){ty=x;break}}
+    const i=pick(free),cx=(i%cols+.5)/cols*100+rnd(-2,2),cy=30+(Math.floor(i/cols)+.5)/rows*64+rnd(-2,2);const el=api.spr(ty.ic(),cx,cy,api.sz(.19),'pop');const p={i,el,life:rnd(2.2,3.4)};cells[i]=p;
+    api.tap(el,()=>{cells[i]=null;el.remove();if(ty.ok){sc++;api.float(cx,cy,'+1')}else{sc=Math.max(0,sc-1);api.float(cx,cy,'-1',true);api.msg(bad[ty.k],true)}upd()})}
+  for(let k=0;k<4;k++)spawn();
+  return {tick(dt){t-=dt;if(t<=0){t=.5;if(cells.filter(Boolean).length<7)spawn()}for(const p of cells){if(!p)continue;p.life-=dt;if(p.life<.8&&!p.f){p.f=1;p.el.classList.add('fade')}if(p.life<=0){p.el.remove();cells[p.i]=null}}},
+   end(){if(fs.g)return '';const r=sc>=18?0:sc>=13?1:sc>=8?2:3,A=FAW[r],pz=Math.round(A[2]*.8/1000)*1000;fs.g={n:sc,r};S.awards=(S.awards||[]).concat({y:year(),k:SEASONS[sea()]+' 대회',r}).slice(-20);earn(pz);vTrust(A[3]);
+     return `${A[1]} <b>${A[0]}</b>! 점수 ${sc}점 · 상금 ${won(pz)}원 · 인심 +${A[3]}<br>${s===0?'동의나물은 잎이 매끈하고 윤기가 나며, 박새는 잎에 세로 주름이 깊어요.':'밤송이는 발로 살짝 벌려 집게로 알밤만 꺼내요.'}`}}}},
 rsafe:{name:'휴양림 안전관리',cat:1,sc:'rsafe',cost:10,time:24,title:()=>HZT[sea()],
  howF:()=>'빨간 느낌표가 붙은 위험 시설과 위험 요소를 눌러 처리해요. 이상 없는 곳은 건드리지 마세요. 오래 두면 사고가 나요.',
  init(api){const s=sea(),H=HZS[s];let fixed=0,acc=0,waste=0,t=.3;const seen={};const cells=grid(3,4,22,92);const busy=new Set();
@@ -3914,7 +3939,7 @@ function liveStop(){if(!LV)return;LV.dead=true;LV.offs.forEach(f=>{try{f()}catch
 function livePres(force){if(!LV||!LV.room)return;const now=performance.now();if(!force&&now-LV.lastPres<120)return;LV.lastPres=now;const m=cleanMe(ME?ME.me:S.me);
   LV.room.presence({x:Math.round(P.x),y:Math.round(P.y),f:P.face,mv:P.moving?1:0,me:{name:m.name,shirt:m.shirt,hat:m.hat,hair:m.hair},owner:S.visiting?0:1,say:LV.say,emo:LV.emo}).catch(()=>{})}
 function livePeers(list){if(!LV)return;const seen=new Set(),blk=lvBlk();
-  for(const p of list){if(p.kind!=='viewer'||p.sameTab)continue;const pr=p.presence||{};if(typeof pr.x!=='number')continue;seen.add(p.peer);let q=LV.peers.get(p.peer);
+  for(const p of list){if(p.kind!=='viewer'||p.sameTab||p.isMe)continue;const pr=p.presence||{};if(typeof pr.x!=='number')continue;seen.add(p.peer);let q=LV.peers.get(p.peer);
     const nx=clamp(Number(pr.x)||0,0,WW),ny=clamp(Number(pr.y)||0,0,WH);
     if(!q){q={peer:p.peer,x:nx,y:ny,phase:0,face:'down',moving:false,sayK:'',emoK:''};LV.peers.set(p.peer,q)}
     q.tx=nx;q.ty=ny;q.face=['up','down','left','right'].includes(pr.f)?pr.f:'down';q.me=cleanMe(pr.me);q.owner=!!pr.owner&&(!p.by||p.by===LV.host);q.key=pzKeyOf(p);q.blocked=blk.includes(q.key);
