@@ -783,7 +783,10 @@ const VREQ=[
 ];
 const FEST={0:{n:'산나물 축제',ban:'봄 산나물 한 바구니, 마을 인심 한 바구니',ids:['gosari','chwi','durup','myeongi','bibim','durupsukhoe','chwissam','myeongijang','gorosoebottle']},
   2:{n:'밤·곶감 축제',ban:'알밤 줍고 곶감 맛보는 산골 가을 잔치',ids:['bam','gotgam','gunbam','yanggaeng','gangjeong','gotgamssam','gotgamset','omijacheong','omijatea']}};
-const FCAP=15;
+const FCAP=40,FTASTE=10;const FSQ={};
+// 축제 체험 부스 (축제마다 하나, 하루 한 번)
+const FEXP={0:{n:'산나물 캐기 체험',ds:'손님들과 뒷산에 올라 고사리·취나물을 캐고, 독초 구별법도 알려 줘요.'},2:{n:'알밤 줍기 체험',ds:'밤나무 동산에서 손님들이 알밤을 줍고, 가시 밤송이 까는 법을 배워요.'}};
+const fexpPay=()=>Math.max(12000,Math.round((12000+visitors()*800)/100)*100);
 const VCLS=[
   {id:'straw',n:'짚공예 교실',who:'옆집 할머니',ds:'볏짚으로 달걀꾸러미와 짚신을 엮어요.',need:{}},
   {id:'char',n:'숯가마 체험',who:'김씨 아저씨',ds:'저급 원목으로 숯을 굽고 숯 향을 맡아요.',need:{wood_low:2}},
@@ -803,9 +806,17 @@ function vil(){if(!S.vil||typeof S.vil!=='object')S.vil={tr:0,reqs:[],rd:0,homes
   return v}
 function vTier(){const t=vil().tr;let k=0;VTIER.forEach((x,i)=>{if(t>=x[0])k=i});return k}
 function vTrust(n){const v=vil(),k0=vTier();v.tr=clamp(v.tr+n,0,100);const k1=vTier();if(k1>k0)setTimeout(()=>toast(`마을 인심이 올랐어요! 이제 ‘${VTIER[k1][1]}’ 단계예요.`),900)}
+function festBooth(){const fo=festOf();if(!fo||S.visiting)return '';const v=vil();if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};
+  const sold=v.fs.n||0,left=Math.max(0,FCAP-sold),tl=Math.max(0,FTASTE-(v.fs.t||0)),list=fo.ids.filter(id=>have(id)>0),ex=FEXP[sea()],boost=S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0;
+  return `<h3>🎉 오늘은 ${fo.n}!</h3><div class="card vfest" style="display:grid;gap:8px"><p style="margin:0;font-size:13px;color:var(--ink2);line-height:1.55">“${fo.ban}” 장터 마당에 축제가 열려 구경 온 손님이 많아요. 제철 물건을 넉넉히 팔 수 있고(오늘 ${left}개 더), 시식으로 나누면 인심이 오르고 단골이 늘어요(시식 ${tl}개 더).</p>
+    ${list.length?list.map(id=>{const n=have(id),ic=ITEM[id]?ITEM[id].ic():recIcon(RI[id]),mx=Math.max(0,Math.min(n,Math.max(left,tl))),q=clamp(FSQ[id]||1,mx?1:0,Math.max(mx,1));FSQ[id]=q;return `<div class="sell" style="grid-template-columns:36px 1fr;row-gap:6px">${ic}<div class="nm">${nameOf(id)}<small>${n}개 · 개당 ${won(festPrice(id))}원</small></div>
+      <div style="grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:6px;flex-wrap:wrap"><div class="qty"><button data-vfq="${id}:-1" aria-label="하나 빼기" ${q>1?'':'disabled'}>−</button><b id="fsq_${id}">${q}</b><button data-vfq="${id}:1" aria-label="하나 더하기" ${q<mx?'':'disabled'}>＋</button><button class="qmax" data-vfq="${id}:max" ${mx>1?'':'disabled'}>최대</button></div>
+      <button class="btn ghost" id="fst_${id}" data-vft="${id}:${q}" ${tl>=q&&q>0?'':'disabled'}>${q}개 시식</button><button class="btn" id="fsb_${id}" data-vfs="${id}:${q}" ${left>=q&&q>0?'':'disabled'}>${q}개 팔기 · ${won(festPrice(id)*q)}원</button></div></div>`}).join(''):`<p class="empty">축제에 낼 ${sea()===0?'산나물이나 나물 요리':'밤·곶감이나 가공품'}이 없어요.</p>`}
+    ${boost?`<p style="margin:0;font-size:12.5px;color:var(--good)">시식 덕분에 ${S.festBoost.until-S.day+1}일 동안 장터 손님이 하루 ${boost}명 더 와요.</p>`:''}
+    ${ex?`<div class="want"><div class="w" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-family:var(--display);font-weight:400">🧺 ${ex.n}</b><small style="color:var(--ink2);line-height:1.45">${ex.ds} 체험비 ${won(fexpPay())}원 · 인심 +2</small></div><button class="btn" data-vfx ${v.fs.x||S.sta<8?'disabled':''}>${v.fs.x?'오늘 끝':'열기'}<small style="display:block;font-size:11px;opacity:.85">체력 8</small></button></div>`:''}</div>`}
 function festDay(d){const dd=d||S.day,s=sea(dd);return (s===0||s===2)&&((dd-1)%7+1)===5}
 function festOf(d){return festDay(d)?FEST[sea(d)]:null}
-function festPrice(id){const p=ITEM[id]?ITEM[id].p:RI[id].p;return Math.round(p*(1.3+vil().tr/400)/100)*100}
+function festPrice(id){return ITEM[id]?ITEM[id].p:RI[id].p}
 function clsOk(c){const v=vil();return v.tr>=15&&(!c.sea||c.sea.includes(sea()))&&(c.hm||0)<=v.homes}
 function clsPay(){return Math.round((10000+visitors()*500)*.6/100)*100}
 function vIcon(need,sta){if(sta)return `<span style="color:#8a5a32">${SP.icon.tool}</span>`;const k=Object.keys(need)[0];return ITEM[k]?ITEM[k].ic():recIcon(RI[k])}
@@ -815,9 +826,7 @@ function villageLife(){const v=vil(),k=vTier(),nx=VTIER[k+1],pc=nx?(v.tr-VTIER[k
   let h=`<div class="card vtr"><div class="row" style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-family:var(--display);font-weight:400;font-size:17px">마을 인심 · ${VTIER[k][1]}</b><span style="color:var(--ink2);font-size:13px">${v.tr} / 100</span></div>
   <div class="bar" style="margin:6px 0"><i style="width:${pc}%;background:linear-gradient(90deg,#c8432b,#e8a040)"></i></div>
   <p style="margin:0;font-size:12.5px;color:var(--ink2)">주민 부탁을 들어주고 마을 일에 함께하면 인심이 쌓여요. ${v.tr<15?'인심 15가 되면 주민 강사 체험을 열 수 있어요.':nextH?`인심 ${nextH.tr}이 되면 ${nextH.n}${nextH.j} 이사 올 수 있어요.`:'귀산촌 가구가 모두 자리 잡았어요.'}</p></div>`;
-  if(fo){const sold=v.fs&&v.fs.d===S.day?v.fs.n:0,left=FCAP-sold,list=fo.ids.filter(id=>have(id)>0);
-    h+=`<h3>오늘은 ${fo.n}!</h3><div class="card vfest"><p style="margin:0 0 6px;font-size:13px;color:var(--ink2)">“${fo.ban}” 마을 마당에 축제 부스가 섰어요. 축제 물건은 정가보다 ${Math.round(30+v.tr/4)}% 비싸게 팔려요. 오늘 부스에 낼 수 있는 물건 ${left}개 남음.</p>
-    ${list.length?list.map(id=>{const n=have(id),ic=ITEM[id]?ITEM[id].ic():recIcon(RI[id]);return `<div class="sell">${ic}<div class="nm">${nameOf(id)}<small>${n}개 · 개당 ${won(festPrice(id))}원</small></div><button class="btn ghost" data-vfs="${id}:1" ${left>0?'':'disabled'}>1개</button><button class="btn" data-vfs="${id}:all" ${left>0?'':'disabled'}>모두</button></div>`}).join(''):`<p class="empty">축제에 낼 ${sea()===0?'산나물이나 나물 요리':'밤·곶감이나 가공품'}이 없어요.</p>`}</div>`}
+  if(fo){h+=`<div class="card" style="display:flex;gap:10px;align-items:center;border:2px solid #c8432b"><div style="flex:1;min-width:0"><b style="font-family:var(--display);font-weight:400;font-size:17px">오늘은 ${fo.n}!</b><div style="font-size:13px;color:var(--ink2);line-height:1.5">장터에서 축제가 열렸어요. 제철 물건을 팔고, 시식 코너와 체험 부스도 열어 보세요.</div></div><button class="btn" data-tab="market">장터로</button></div>`}
   else{let d=S.day+1;while(!festDay(d)&&d<S.day+30)d++;h+=`<p class="sub" style="margin:10px 2px 0">다음 마을 축제: ${d-S.day}일 뒤 ${FEST[sea(d)].n}</p>`}
   h+=`<h3>마을 회관 게시판 · 주민 부탁</h3>`+v.reqs.map((r,i)=>{const q=VREQ[r.i];if(!q)return '';const ok=q.sta?S.sta>=q.sta:canPay(q.need);
     return `<div class="card rec"><div class="pic">${vIcon(q.need,q.sta)}</div><div style="min-width:0"><div class="nm">${q.who}</div><div class="ds" style="font-size:13px">“${q.t}”</div><div class="ings">${q.sta?`<span class="${S.sta>=q.sta?'ok':'no'}">체력 ${q.sta}</span>`:needTxt(q.need)}</div><div class="price">인심 +${q.tr}${q.gift?' · '+giftTxt(q.gift):''}</div></div><div class="side"><button class="btn" data-vreq="${i}" ${!r.done&&ok?'':'disabled'}>${r.done?'완료':q.sta?'거들기':'들어주기'}</button></div></div>`}).join('');
@@ -836,8 +845,18 @@ function vilClick(d){
     r.done=true;vTrust(q.tr);let msg=`${q.who}: “고맙네, 정말 큰 도움이 됐어!” 인심 +${q.tr}`;
     if(typeof q.gift==='number'){earn(q.gift);msg+=` · 답례 +${won(q.gift)}원`}else if(q.gift){for(const[k,n]of Object.entries(q.gift)){if(ITEM[k])S.inv[k]=inv(k)+n;else S.prod[k]=prod(k)+n}msg+=' · '+giftTxt(q.gift)}
     save();toast(msg);renderKeep();renderTop();return true}
-  if(d.vfs){const[id,q]=d.vfs.split(':'),v=vil(),fo=festOf();if(!fo||!fo.ids.includes(id))return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0};const left=FCAP-v.fs.n,n=Math.min(left,q==='all'?have(id):1,have(id));if(n<=0)return true;
-    const first=!v.fs.n;if(ITEM[id])S.inv[id]-=n;else S.prod[id]-=n;v.fs.n+=n;const p=festPrice(id)*n;earn(p);if(first)vTrust(5);save();toast(`축제 부스에서 ${nameOf(id)} ${n}개가 팔렸어요! +${won(p)}원${first?' · 축제에 함께해 인심 +5':''}`);renderKeep();renderTop();return true}
+  if(d.vfq){const[id,dd]=d.vfq.split(':'),v=vil(),fo=festOf();if(!fo||!fo.ids.includes(id))return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};const left=Math.max(0,FCAP-(v.fs.n||0)),tl=Math.max(0,FTASTE-(v.fs.t||0)),mx=Math.max(0,Math.min(have(id),Math.max(left,tl)));
+    let q=dd==='max'?mx:(FSQ[id]||1)+Number(dd);q=clamp(q,mx?1:0,mx);FSQ[id]=q;const b=$('#fsq_'+id),sb=$('#fsb_'+id);if(b)b.textContent=q;if(sb){sb.dataset.vfs=id+':'+q;sb.textContent=`${q}개 팔기 · ${won(festPrice(id)*q)}원`;sb.disabled=!(left>=q&&q>0)}const tb=$('#fst_'+id);if(tb){tb.dataset.vft=id+':'+q;tb.textContent=`${q}개 시식`;tb.disabled=!(tl>=q&&q>0)}
+    const row=b&&b.closest('.qty');if(row){const bs=row.querySelectorAll('button');bs[0].disabled=q<=1;bs[1].disabled=q>=mx}return true}
+  if(d.vfs){const[id,q]=d.vfs.split(':'),v=vil(),fo=festOf();if(!fo||!fo.ids.includes(id))return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};const left=FCAP-(v.fs.n||0),n=Math.min(left,q==='all'?have(id):Math.max(1,Math.floor(Number(q)||1)),have(id));if(n<=0)return true;FSQ[id]=1;
+    const first=!v.fs.n&&!v.fs.t&&!v.fs.x;if(ITEM[id])S.inv[id]-=n;else S.prod[id]-=n;v.fs.n+=n;const p=festPrice(id)*n;earn(p);if(first)vTrust(5);save();toast(`축제 장터에서 ${nameOf(id)} ${n}개가 팔렸어요! +${won(p)}원${first?' · 축제에 함께해 인심 +5':''}`);renderKeep();renderTop();return true}
+  if(d.vft){const[id,q]=d.vft.split(':'),v=vil(),fo=festOf();if(!fo||!fo.ids.includes(id))return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};
+    const tl=FTASTE-(v.fs.t||0),n=Math.min(tl,Math.max(1,Math.floor(Number(q)||1)),have(id));if(n<=0)return true;const first=!v.fs.n&&!v.fs.t&&!v.fs.x;
+    if(ITEM[id])S.inv[id]-=n;else S.prod[id]-=n;const t0=v.fs.t||0;v.fs.t=t0+n;FSQ[id]=1;const tr=Math.floor(v.fs.t/2)-Math.floor(t0/2)+(first?5:0);if(tr)vTrust(tr);
+    const bn=Math.min(3,Math.ceil(v.fs.t/3));S.festBoost={until:S.day+7,n:Math.max(bn,S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0)};save();
+    toast(`${nameOf(id)} ${n}개를 시식으로 나눴어요. 손님들이 맛있다고 해요!${tr?` 인심 +${tr}`:''} · 앞으로 일주일 장터 손님 하루 +${S.festBoost.n}명`);renderKeep();renderTop();return true}
+  if(d.vfx!==undefined){const v=vil(),fo=festOf(),ex=FEXP[sea()];if(!fo||!ex)return true;if(!v.fs||v.fs.d!==S.day)v.fs={d:S.day,n:0,t:0,x:0};if(v.fs.x||S.sta<8)return true;
+    const first=!v.fs.n&&!v.fs.t;S.sta-=8;v.fs.x=1;const p=fexpPay();earn(p);vTrust(2+(first?5:0));save();toast(`${ex.n}을 열었어요! 손님들이 즐거워해요. 체험비 +${won(p)}원 · 인심 +${2+(first?5:0)}`);renderKeep();renderTop();return true}
   if(d.vcls){const v=vil(),c=VCLS.find(x=>x.id===d.vcls);if(!c||!clsOk(c)||(v.cls&&v.cls.d===S.day)||S.sta<6||!canPay(c.need)||!visitors())return true;take(c.need);S.sta-=6;v.cls={id:c.id,d:S.day};const p=clsPay();earn(p);vTrust(3);save();toast(`${c.who} 강사와 함께 ‘${c.n}’ 시작! 손님들이 즐거워해요. +${won(p)}원 · 인심 +3`);renderKeep();renderTop();return true}
   if(d.vhome!==undefined){const v=vil(),i=+d.vhome,m=VHOME[i];if(i!==v.homes||!m||v.tr<m.tr||!canPay(m.need)||S.money<m.cost)return true;take(m.need);S.money-=m.cost;v.homes++;vTrust(8);save();publishVillage();
     modal(`<h2>${m.n}${m.j} 이사 왔어요!</h2><p>${m.ds}</p><p>내가 키운 나무로 지은 목조 주택이에요. 마을 길가에 새 집이 생겼어요. 장터 손님과 난방 주문이 늘고, 새 이웃의 부탁도 들어와요.</p><button class="btn" data-close style="width:100%;margin-top:8px">반가워요!</button>`);renderTop();return true}
@@ -848,8 +867,8 @@ function pushVillage(Lst){if(S.visiting||!S.vil)return;const v=vil();
   if(v.cls&&v.cls.d===S.day){const c=VCLS.find(x=>x.id===v.cls.id);if(c){const[x,y]=VCLSP;Lst.push({t:'vmat',x,y:y-30,c});
     const T=clock;Lst.push({t:'person',y:y-14,ref:{x,y:y-14,face:'down',phase:0,moving:false},o:{shirt:c.who.includes('할머니')?'#8a4a6a':c.who.includes('목수')?'#4a6a8a':'#6b6152',pants:'#4a3a30',hair:c.who.includes('할머니')?'#d8d4cc':'#3a2a22',hat:c.who.includes('할머니')?'scarf':'none',hatC:'#e9e1cf',name:c.who+' 강사',pose:'sit'}});
     [[-26,10],[0,16],[26,10]].forEach(([dx,dy],k)=>Lst.push({t:'person',y:y+dy,ref:{x:x+dx,y:y+dy,face:'up',phase:0,moving:false},o:{shirt:['#4a8ad8','#e8a0b8','#f2c230'][k],pants:'#3a3a40',hair:'#3a2a22',hat:'none',name:'',pose:'sit'}}))}}
-  if(festDay()){Lst.push({t:'vfest',x:540,y:880});const now=clock;
-    [[462,1018,'photo','#e46f27'],[604,1062,'point','#3a7ab8'],[632,1060,null,'#d8507a'],[560,958,null,'#4f9a5a'],[498,1032,'photo','#f2c230']].forEach(([x,y,pose,sh],k)=>{const b=Math.abs(Math.sin(now*2+k))*1.5;Lst.push({t:'person',y,ref:{x,y:y-b,face:k%2?'left':'down',phase:0,moving:false},o:{shirt:sh,pants:'#3a3a40',hair:'#3a2a22',hat:k===2?'straw':'none',hatC:'#e3bd62',name:'',pose}})})}}
+  if(festDay()){Lst.push({t:'vfest',x:1060,y:1010});const now=clock;
+    [[1030,1214,'photo','#e46f27'],[1112,1246,'point','#3a7ab8'],[1140,1250,null,'#d8507a'],[1056,1150,null,'#4f9a5a'],[990,1192,'photo','#f2c230']].forEach(([x,y,pose,sh],k)=>{const b=Math.abs(Math.sin(now*2+k))*1.5;Lst.push({t:'person',y,ref:{x,y:y-b,face:k%2?'left':'down',phase:0,moving:false},o:{shirt:sh,pants:'#3a3a40',hair:'#3a2a22',hat:k===2?'straw':'none',hatC:'#e3bd62',name:'',pose}})})}}
 const VDRAW={
   vboard(c,{x,y,open}){ell(c,x,y+2,22,5,'rgba(0,0,0,.2)');c.strokeStyle='#6b4a2e';c.lineWidth=3.5;ln(c,x-15,y,x-15,y-34);ln(c,x+15,y,x+15,y-34);
     rr(c,x-22,y-46,44,28,3,'#8a6440');rr(c,x-19,y-43,38,22,2,'#e8d8b4');c.fillStyle='#5a4030';c.beginPath();c.moveTo(x-26,y-45);c.lineTo(x,y-56);c.lineTo(x+26,y-45);c.closePath();c.fill();
@@ -872,11 +891,11 @@ const VDRAW={
     if(cl.id==='char'){rr(c,x+38,yy-26,22,24,8,'#8a7a6a');circ(c,x+49,yy-12,4,'#e46f27');for(let k=0;k<2;k++){const t=(clock*.4+k/2)%1;c.globalAlpha=.4*(1-t);circ(c,x+49+t*6,yy-30-t*24,4+t*6,'#9a9a9a')}c.globalAlpha=1}
     else if(cl.id==='gotgam'||cl.id==='straw'||cl.id==='jang'||cl.id==='namul'||cl.id==='wood'){const col={gotgam:'#e8742a',straw:'#d8b860',jang:'#6b4a2e',namul:'#6a9a3a',wood:'#c89a62'}[cl.id];[[-14,0],[0,4],[14,0]].forEach(([dx,dy])=>{ell(c,x+dx,yy+dy-2,5,3,col)})}
     c.font='11px Jua, sans-serif';const t=cl.n,w=c.measureText(t).width;rr(c,x-w/2-6,yy+16,w+12,16,4,'#a8743e');c.fillStyle='#fff';c.textAlign='center';c.fillText(t,x,yy+28)},
-  vfest(c,o){const fo=festOf();if(!fo)return;const pts=[[440,900],[478,880],[530,872],[580,876],[630,892]];
+  vfest(c,o){const fo=festOf();if(!fo)return;const pts=[[942,1042],[1000,1022],[1060,1014],[1122,1022],[1184,1050]];
     c.strokeStyle='#6b4a2e';c.lineWidth=1.2;c.beginPath();pts.forEach(([x,y],k)=>k?c.lineTo(x,y):c.moveTo(x,y));c.stroke();
     const cols=['#c8432b','#f2c230','#3a7ab8','#4f9a5a','#e8a0b8'];for(let k=0;k<pts.length-1;k++){const[a,b]=pts[k],[p,q]=pts[k+1];for(let j=1;j<5;j++){const t=j/5,fx=a+(p-a)*t,fy=b+(q-b)*t+Math.sin(t*Math.PI)*6;c.fillStyle=cols[(k*4+j)%5];c.beginPath();c.moveTo(fx-4,fy);c.lineTo(fx+4,fy);c.lineTo(fx,fy+9+Math.sin(clock*3+j)*1.2);c.closePath();c.fill()}}
-    [[440,900],[630,892]].forEach(([x,y])=>{c.strokeStyle='#6b4a2e';c.lineWidth=3;ln(c,x,y,x,y+48)});
-    c.font='13px Jua, sans-serif';const t=fo.n,w=c.measureText(t).width;rr(c,535-w/2-10,848,w+20,22,6,'#c8432b');c.fillStyle='#fff';c.textAlign='center';c.fillText(t,535,864)}
+    [[942,1042],[1184,1050]].forEach(([x,y])=>{c.strokeStyle='#6b4a2e';c.lineWidth=3;ln(c,x,y,x,y+48)});
+    c.font='13px Jua, sans-serif';const t=fo.n,w=c.measureText(t).width;rr(c,1060-w/2-10,986,w+20,22,6,'#c8432b');c.fillStyle='#fff';c.textAlign='center';c.fillText(t,1060,1002)}
 };
 const CONTRACTS=[{n:'읍내 가구 공장',pid:'mdf',q:[2,3]},{n:'읍내 가구 공장',pid:'particle',q:[2,3]},{n:'택배 물류센터',pid:'pallet',q:[3,5]},{n:'지역난방 발전소',pid:'pellet',q:[4,6]},{n:'마을 목공방',pid:'plank',q:[1,3]},{n:'목조주택 현장',pid:'glulam',q:[1,2]},{n:'목조 도서관 공사',pid:'clt',q:[1,2]}];
 const WXI={'폭염':{fire:.09,slide:0},'눈':{fire:0,slide:0},'맑음':{fire:.05,slide:0},'건조':{fire:.13,slide:0},'강풍':{fire:.15,slide:0},'비':{fire:.01,slide:.06},'폭우':{fire:0,slide:.42}};
@@ -1258,7 +1277,7 @@ market(){
   const stock=[...REC.filter(r=>prod(r.id)).map(r=>({id:r.id,t:'p',n:r.n,c:prod(r.id),p:r.p,ic:recIcon(r)})),
     ...Object.keys(ITEM).filter(k=>inv(k)).map(k=>({id:k,t:'r',n:ITEM[k].n+' (원물)',c:inv(k),p:ITEM[k].p,ic:ITEM[k].ic()}))];
   return `<div class="sec">
-  <h2>장터</h2><p class="sub">손님은 원하는 물건을 사면 떠나고, 줄 선 다음 손님이 좌판 앞으로 와요. 맞춰 줄 수 없는 손님은 다음으로 넘겨도 돼요. 주문가는 정가보다 10% 안팎으로 높아요.</p>
+  <h2>장터</h2>${festBooth()}<p class="sub">손님은 원하는 물건을 사면 떠나고, 줄 선 다음 손님이 좌판 앞으로 와요. 맞춰 줄 수 없는 손님은 다음으로 넘겨도 돼요. 주문가는 정가보다 10% 안팎으로 높아요.</p>
   ${fireBan()?banHtml():''}
   <div class="card kv"><div class="row"><span>줄 선 손님</span><b>${Math.max(0,S.orders.length-3)}명</b></div><div class="row"><span>오늘 더 찾아올 손님</span><b>${S.arrivals}명</b></div>${rainF()<1?`<p class="empty" style="font-size:12.5px">${S.wx==='폭우'?'폭우가 쏟아져 장터에 오는 손님이 아주 적어요.':'비가 와서 손님이 평소보다 적어요.'}</p>`:''}</div>
   ${S.orders.length?S.orders.slice(0,3).map((o,i)=>{const c=CUST[o.c],r=RI[o.pid],h=prod(o.pid),ban=isBanned(o.pid);
@@ -1850,7 +1869,7 @@ function advice(p){
   if(!st.cut){const g=gradeP(st.q+bon(st));add('wood',st.age>=hA(st)?`조림지가 벌기령에 이르렀어요. 지금 베면 고급재가 ${Math.round(g.hi*100)}%쯤 나오겠어요.`:`조림지가 ${hA(st)-st.age}년 더 자라야 해요. 지금 건강도면 고급재는 ${Math.round(g.hi*100)}%쯤일 거예요. 가지치기와 솎아베기가 품질을 올려요.`)}
   if(inv('wood_low')+inv('wood_mid')+inv('wood_high'))add('wood','창고에 원목이 있네요. 공장에 가져오면 쓰임새에 맞게 가공해 줄게요.');
   if(S.rack.some(r=>r&&r.d<=0))add('village','덕장 곶감이 다 말랐더라. 얼른 걷어.');
-  if(!S.visiting){const v=vil();if(v.reqs.some(r=>!r.done))add('village','마을 게시판에 이웃들 부탁이 올라왔더라. 한번 들러 봐.');if(festDay())add('village',`오늘 ${festOf().n} 날이야! 마을 마당에 부스가 섰어.`);else if(festDay(S.day+1))add('village',`내일이 ${festOf(S.day+1).n}이야. 팔 물건 좀 챙겨 둬.`)}
+  if(!S.visiting){const v=vil();if(v.reqs.some(r=>!r.done))add('village','마을 게시판에 이웃들 부탁이 올라왔더라. 한번 들러 봐.');if(festDay())add('market',`오늘 ${festOf().n} 날이야! 장터에 축제가 열렸어.`);else if(festDay(S.day+1))add('market',`내일이 ${festOf(S.day+1).n}이야. 장터에 낼 물건 좀 챙겨 둬.`)}
   const sell=S.orders.slice(0,3).find(o=>prod(o.pid)>=o.qty);if(sell)add('village',`장터에 ${SHORT[sell.c]}이(가) 찾는 ${RI[sell.pid].n}, 자네한테 있지 않나?`);
   if(builtCount()<4)add('care','휴양림 터에 벤치나 데크부터 놓아 보세요. 팔레트재나 제재목이 있으면 돼요.');
   add('herb',S.fc==='비'||S.wx==='비'?'비 온 뒤엔 버섯이 잘 올라와. 표고 골목에 가 봐.':'요즘 같은 가을엔 송이가 소나무 아래 숨어 있어. 산자락을 잘 살펴봐.');
@@ -1943,7 +1962,10 @@ async function setFriends(list){if(!DB||!UID)return false;try{await DB.doc('frie
 async function addFriend(id){if(!id||id===UID||FR.mine.includes(id))return;if(await setFriends([...FR.mine,id]))toast(FR.in[id]?'친구가 되었어요! 이제 서로의 마을에 놀러 갈 수 있어요.':'친구 신청을 보냈어요. 상대가 수락하면 친구가 돼요.');else toast('지금은 친구 신청을 보낼 수 없어요.');loadNeighbors()}
 async function delFriend(id){if(await setFriends(FR.mine.filter(x=>x!==id)))toast('친구를 끊었어요.');loadNeighbors()}
 async function addByCode(code){code=String(code||'').trim().toUpperCase();if(code.length<4){toast('친구 코드를 확인해 주세요.');return}if(code===myCode()){toast('내 코드예요. 친구의 코드를 넣어 주세요.');return}
-  try{const qs=await DB.collection('villages').where('code','==',code).limit(1).get();if(!qs.docs.length){toast('그 코드의 마을을 찾지 못했어요.');return}const d=qs.docs[0];NB[d.id]=d.data();addFriend(d.id)}catch(e){toast('지금은 찾을 수 없어요. 잠시 뒤 다시 해 주세요.')}}
+  try{const qs=await DB.collection('villages').where('code','==',code).limit(20).get();
+    // 같은 코드를 가진 마을이 여럿이면(계정이 바뀌며 생긴 예전 마을 등) 가장 최근에 접속한 마을로 이어요
+    const ds=qs.docs.filter(x=>x.id!==UID).sort((a,b)=>(Number((b.data()||{}).updated)||0)-(Number((a.data()||{}).updated)||0));
+    if(!ds.length){toast(qs.docs.length?'내 마을이에요. 친구의 코드를 넣어 주세요.':'그 코드의 마을을 찾지 못했어요.');return}const d=ds[0];NB[d.id]=d.data();addFriend(d.id)}catch(e){toast('지금은 찾을 수 없어요. 잠시 뒤 다시 해 주세요.')}}
 // shelf: S.shelf={pid:qty}; price = RI[pid].p
 function shelfQ(id){return (S.shelf&&S.shelf[id])||0}
 function shelfHtml(){if(S.visiting)return '';const ids=REC.filter(r=>prod(r.id)||shelfQ(r.id)).map(r=>r.id);
@@ -2067,8 +2089,8 @@ function endDay(){tutHit('sleep');
   if(Math.random()<pP){const st=pick(S.stands.filter(x=>!x.cut&&!x.pest&&hasPine(x)));if(st){st.pest=S.prev.scout===ended?1:3;L.push(S.prev.scout===ended?`예찰 중에 ${LOCN[st.loc]}에서 재선충병 감염목 1그루를 일찍 찾았어요. 얼른 방제하세요.`:`<b>${LOCN[st.loc]}에 소나무재선충병이 퍼졌어요!</b> 감염목 3그루. 방제가 늦으면 계속 번져요.`)}}
   const fire=Math.random()<pF;if(S.badWood)L.push(`금지 기간에 판 장작 ${S.badWood}묶음 때문에 어젯밤 산불 위험이 +${S.badWood*6}%p 높았어요.`);S.badWood=0;
   {const lv=level();if(lv>(S.lvSeen||1)){const nw=PARCELS.filter(x=>x.lv>(S.lvSeen||1)&&x.lv<=lv).map(x=>x.n);L.unshift(`<b>산림경영 Lv.${lv} 달성!</b>${nw.length?` 새 임지 매물: ${nw.join(', ')}.`:''}${lv===2?' 자연환경보전림을 만들 수 있어요.':lv===3?' 휴양·치유림을 만들 수 있어요.':''}`);S.lvSeen=lv}}
-  S.orders=genOrders();{const vh=vil().homes;S.arrivals=Math.max(1,Math.round((2+vh+Math.floor(visitors()/3)+bn('kids')*2)*(S.wx==='폭우'?.25:S.wx==='비'?.55:1)*(festDay()?1.5:1)));const hn=[1,0,3,3][sea()];S.heat=genHeat(hn);if(hn)for(let i=0;i<vh;i++){const pid=i===1?'firewood':'pellet',qty=1+ri(2);S.heat.push({n:VHOME[i].sh+' '+(pid==='firewood'?'화목난로':'펠릿 보일러'),pid,q:'새집 첫 겨울이라 연료가 넉넉해야 해요.',qty,off:Math.round(RI[pid].p*qty*1.1/100)*100,done:false})}
-    if(festDay())L.unshift(`<b>오늘은 마을 ${festOf().n}이에요!</b> 장터 손님이 늘고, 마을 마당 축제 부스에서 제철 물건을 비싸게 팔 수 있어요.`);else if(festDay(S.day+1))L.push(`내일은 마을 ${festOf(S.day+1).n}이에요. 팔 물건을 미리 준비해 두세요.`)}S.camp=genCamp();S.con=genCon();
+  S.orders=genOrders();{const vh=vil().homes;S.arrivals=Math.max(1,Math.round((2+vh+Math.floor(visitors()/3)+bn('kids')*2)*(S.wx==='폭우'?.25:S.wx==='비'?.55:1)*(festDay()?1.5:1))+(S.festBoost&&S.festBoost.until>=S.day?S.festBoost.n:0));const hn=[1,0,3,3][sea()];S.heat=genHeat(hn);if(hn)for(let i=0;i<vh;i++){const pid=i===1?'firewood':'pellet',qty=1+ri(2);S.heat.push({n:VHOME[i].sh+' '+(pid==='firewood'?'화목난로':'펠릿 보일러'),pid,q:'새집 첫 겨울이라 연료가 넉넉해야 해요.',qty,off:Math.round(RI[pid].p*qty*1.1/100)*100,done:false})}
+    if(festDay())L.unshift(`<b>오늘은 마을 ${festOf().n}이에요!</b> 장터에 축제가 열려 손님이 많아요. 제철 물건을 넉넉히 팔고, 시식 코너와 ${FEXP[sea()]?FEXP[sea()].n:'체험 부스'}도 열어 보세요.`);else if(festDay(S.day+1))L.push(`내일은 마을 ${festOf(S.day+1).n}이에요. 팔 물건을 미리 준비해 두세요.`)}S.camp=genCamp();S.con=genCon();
   if(S.builds.camp&&S.camp.length)L.push(`캠핑장에 손님 ${S.camp.length}팀이 묵어요.${fireBan()?' 오늘은 산불 위험이 높아 장작 판매가 금지예요.':''}`);
   const ppl=PEOPLE.map((p,i)=>i).filter(i=>PEOPLE[i].facts.some((_,j)=>!S.facts.includes(i+'-'+j)));
   if(ppl.length&&!fire){const pi=pick(ppl),p=PEOPLE[pi];const fi=p.facts.findIndex((_,j)=>!S.facts.includes(pi+'-'+j));learn(pi,fi);L.push(`<i>마을 소식 · ${p.n}: “${p.facts[fi]}”</i>`)}
